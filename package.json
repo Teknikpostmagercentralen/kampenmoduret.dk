@@ -1,6 +1,6 @@
 {
   "engines": {
-    "node": ">=18.18.0"
+    "node": ">=20.09.0"
   },
   "name": "kampen-mod-uret",
   "version": "0.0.1",
