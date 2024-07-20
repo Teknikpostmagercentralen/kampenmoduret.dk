@@ -1,7 +1,4 @@
 {
-  "engines": {
-    "node": ">=20.15.1"
-  },
   "name": "kampen-mod-uret",
   "version": "0.0.1",
   "private": true,
