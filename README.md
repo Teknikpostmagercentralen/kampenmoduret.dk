@@ -1,3 +1,10 @@
+# How create an admin user
+
+1. Create a user in auth
+2. Put the user ID in /admins/
+3. Congrats, you now have an admin suer
+
+
 # create-svelte
 
 Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
