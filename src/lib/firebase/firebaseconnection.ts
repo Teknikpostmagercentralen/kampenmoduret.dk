@@ -12,8 +12,11 @@ import type {UserCredential} from 'firebase/auth';
 import {initializeApp} from 'firebase/app';
 import {getAuth} from 'firebase/auth';
 import type {User} from "../models/user";
-import {getDatabase, ref, set} from 'firebase/database';
+import {getDatabase, ref, set, child, get} from 'firebase/database';
 import {FirebaseUserAdder} from "./firebaseUserAdder";
+import {FirebaseContants} from "./firebasecontants";
+import type {Task} from "../models/task";
+import type {TasksInTeams} from "../models/tasks-in-teams";
 
 export interface UserAuthCallback {
     onUserLoggedIn: (user: User) => void,
@@ -94,7 +97,7 @@ class FirebaseConnectionHandler {
 
     async writeUserData(uid: string, holdNavn: string, password: string, email: string) {
         const db = getDatabase(app);
-        await set(ref(db, `teams/${uid}`), {
+        await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${uid}`), {
             username: holdNavn,
             email: email,
             password: password,
@@ -109,6 +112,38 @@ class FirebaseConnectionHandler {
                 callback.onUnauthenticated();
             }
         });
+    }
+
+    async writeTaskCompleted(taskID: string): Promise<void> {
+        await this.registerAuthCallback({
+            onUnauthenticated(): void {
+                console.log("error")
+            }, onUserLoggedIn(user: User): void {
+                console.log(`user ${user.firebaseUserID}`)
+            }
+        })
+        const db = getDatabase(app);
+        const snapshot = await get(ref(db, `${FirebaseContants.TASKS_ROOT}/${taskID}`))
+        if(!snapshot || !snapshot.exists()) {
+            console.error("This task does not exist in firebase")
+            return
+        }
+        const task: Task = snapshot.val()
+
+        const teamId = getAuth(app).currentUser?.uid
+
+        if (!teamId) {
+            console.error("Firebase error uknown: errorcode ostemads")
+            return
+        } //fixme if this ever happens in reality we fix it for real. Otherwise we remote it as it is a theoprwetical mistake
+
+        const multiplier = 1 //todo: at some point we calculate the multiplier right here. FOr the moment its set to 1 always
+        //todo think about weather or not this logic belongs in FirebaseConnector. Maybe multiplier to the game,
+
+        const taskToWrite: TasksInTeams = {baseTime: task.baseTime, multiplier: 1, timeEarned: 0}
+
+        await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.TEAM_TASKS}/${taskID}`), taskToWrite)
+        return Promise.resolve()
     }
 }
 
