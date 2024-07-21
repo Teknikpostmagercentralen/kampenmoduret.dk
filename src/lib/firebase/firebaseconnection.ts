@@ -1,10 +1,12 @@
 // src/Auth.ts
-import {signInWithEmailAndPassword, signOut} from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
+import type { UserCredential } from 'firebase/auth';
 
 // src/firebaseConfig.ts
-import {initializeApp} from 'firebase/app';
-import {getAuth} from 'firebase/auth';
-import type {User} from "../models/user";
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import type { User } from "../models/user";
+import { getDatabase, ref, set } from 'firebase/database';
 
 export type FirebaseConfigProperties = {
     apiKey: string,
@@ -39,7 +41,7 @@ class FirebaseConnectionHandler {
     async login(email: string, password: string): Promise<User> {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            return {firebaseUserID: userCredential.user.uid};
+            return { firebaseUserID: userCredential.user.uid };
         } catch (error) {
             console.error('Login failed:', error);
             throw new NotValidCredentialsError("Credentials not found")
@@ -55,6 +57,26 @@ class FirebaseConnectionHandler {
             console.error('Logout failed:', error);
         }
     }
+
+    async register(holdNavn: string, email: string, password: string): Promise<void> {
+        await createUserWithEmailAndPassword(auth, email, password)
+            .then(async (userCredential: UserCredential) => {
+                await updateProfile(userCredential.user, { displayName: holdNavn });
+                await this.writeUserData(userCredential.user.uid, holdNavn, password, email);
+            })
+            .catch((newError: any) => {
+            });
+    }
+    writeUserData(uid: string, holdNavn: string, password: string, email: string) {
+        const db = getDatabase();
+        set(ref(db, `teams/${uid}`), {
+            username: holdNavn,
+            email: email,
+            password: password,
+        });
+    }
 }
+
+
 
 export const FirebaseConnection = new FirebaseConnectionHandler();
