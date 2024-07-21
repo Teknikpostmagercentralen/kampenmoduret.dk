@@ -18,10 +18,14 @@
 				console.log('Unauthenticated');
 			}
 		});
+
 	}
+
 </script>
 
 <main>
+    <button on:click={() => {goto('/tasks/123')}}>Add task 123</button>
+    <button on:click={() => {goto('/admin/registerTeam')}}>Add team</button>
 	{#if user}
 		<h1>This is the {user.firebaseUserID}</h1>
 	{/if}

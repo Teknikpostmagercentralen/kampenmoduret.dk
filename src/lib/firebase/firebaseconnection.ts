@@ -6,17 +6,17 @@ import {
     signOut,
     updateProfile
 } from 'firebase/auth';
-import type {UserCredential} from 'firebase/auth';
+import type { UserCredential } from 'firebase/auth';
 
 // src/firebaseConfig.ts
-import {initializeApp} from 'firebase/app';
-import {getAuth} from 'firebase/auth';
-import type {User} from "../models/user";
-import {getDatabase, ref, set, child, get} from 'firebase/database';
-import {FirebaseUserAdder} from "./firebaseUserAdder";
-import {FirebaseContants} from "./firebasecontants";
-import type {Task} from "../models/task";
-import type {TasksInTeams} from "../models/tasks-in-teams";
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import type { User } from "../models/user";
+import { getDatabase, ref, set, child, get } from 'firebase/database';
+import { FirebaseUserAdder } from "./firebaseUserAdder";
+import { FirebaseContants } from "./firebasecontants";
+import type { Task } from "../models/task";
+import type { TasksInTeams } from "../models/tasks-in-teams";
 
 export interface UserAuthCallback {
     onUserLoggedIn: (user: User) => void,
@@ -52,13 +52,13 @@ export class NotValidCredentialsError extends Error {
 
 class FirebaseConnectionHandler {
     getUser(): User {
-        return {firebaseUserID: getAuth().currentUser?.uid || ""}
+        return { firebaseUserID: getAuth().currentUser?.uid || "" }
     }
 
     async login(email: string, password: string): Promise<User> {
         try {
             const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
-            return {firebaseUserID: userCredential.user.uid};
+            return { firebaseUserID: userCredential.user.uid };
         } catch (error) {
             console.error('Login failed:', error);
             throw new NotValidCredentialsError("Credentials not found")
@@ -83,13 +83,22 @@ class FirebaseConnectionHandler {
         //  otherwise it will not work when write.
         //  Fix this, it does not seem right
         //  And might give us more issues in the future
-        await this.registerAuthCallback({
+        /* await this.registerAuthCallback({
             onUnauthenticated(): void {
                 console.log("error")
             }, onUserLoggedIn(user: User): void {
                 console.log(`user ${user.firebaseUserID}`)
             }
-        })
+        }) */
+
+        const auth = getAuth(app);
+        const currentUser = auth.currentUser;
+
+        // Check if the user is authenticated
+        if (!currentUser) {
+            console.error("User is not authenticated. Please log in.");
+            return;
+        }
 
         await this.writeUserData(uidOfNewUser, holdNavn, password, email);
 
@@ -107,7 +116,7 @@ class FirebaseConnectionHandler {
     registerAuthCallback(callback: UserAuthCallback) {
         onAuthStateChanged(getAuth(), (userCredential) => {
             if (userCredential) {
-                callback.onUserLoggedIn({firebaseUserID: userCredential.uid});
+                callback.onUserLoggedIn({ firebaseUserID: userCredential.uid });
             } else {
                 callback.onUnauthenticated();
             }
@@ -115,16 +124,17 @@ class FirebaseConnectionHandler {
     }
 
     async writeTaskCompleted(taskID: string): Promise<void> {
-        await this.registerAuthCallback({
-            onUnauthenticated(): void {
-                console.log("error")
-            }, onUserLoggedIn(user: User): void {
-                console.log(`user ${user.firebaseUserID}`)
-            }
-        })
+        const auth = getAuth(app);
+        const currentUser = auth.currentUser;
+
+        // Check if the user is authenticated
+        if (!currentUser) {
+            console.error("User is not authenticated. Please log in.");
+            return;
+        }
         const db = getDatabase(app);
         const snapshot = await get(ref(db, `${FirebaseContants.TASKS_ROOT}/${taskID}`))
-        if(!snapshot || !snapshot.exists()) {
+        if (!snapshot || !snapshot.exists()) {
             console.error("This task does not exist in firebase")
             return
         }
@@ -140,7 +150,7 @@ class FirebaseConnectionHandler {
         const multiplier = 1 //todo: at some point we calculate the multiplier right here. FOr the moment its set to 1 always
         //todo think about weather or not this logic belongs in FirebaseConnector. Maybe multiplier to the game,
 
-        const taskToWrite: TasksInTeams = {baseTime: task.baseTime, multiplier: 1, timeEarned: 0}
+        const taskToWrite: TasksInTeams = { baseTime: task.baseTime, multiplier: 1, timeEarned: 0 }
 
         await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.TEAM_TASKS}/${taskID}`), taskToWrite)
         return Promise.resolve()

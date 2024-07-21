@@ -1,14 +1,16 @@
 <script>
-  import {FirebaseConnection} from "$lib/firebase/firebaseconnection";
-  import {goto} from "$app/navigation";
+	import { FirebaseConnection } from '$lib/firebase/firebaseconnection';
+	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 
-  /** @type {import('./$types').PageData} */
-  export let data;
+	/** @type {import('./$types').PageData} */
+	export let data;
 
-  FirebaseConnection.writeTaskCompleted(data.taskID).then(() => {
-    goto("/game")
-  })
-
+	if (browser) {
+		FirebaseConnection.writeTaskCompleted(data.taskID).then(() => {
+			goto('/game');
+		});
+	}
 </script>
 
 <h1>{data.taskID}</h1>

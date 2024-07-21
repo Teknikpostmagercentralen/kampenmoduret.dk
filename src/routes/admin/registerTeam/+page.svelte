@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from "$app/environment";
     import {FirebaseConnection} from "../../../lib/firebase/firebaseconnection";
 
     let email: string;
@@ -9,7 +10,9 @@
     let user = {uid: "geh"} //fixme Delete this line
 
     function register() {
-        FirebaseConnection.register(teamName, email, password)
+        if (browser) {
+            FirebaseConnection.register(teamName, email, password)
+        }
     }
 
 
