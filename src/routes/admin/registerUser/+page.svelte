@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { FirebaseConnection } from "$lib/firebase/firebaseconnection";
-
     let email: string;
     let teamName: string;
     let password: string;

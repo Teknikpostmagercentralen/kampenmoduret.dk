@@ -1,5 +1,5 @@
 // src/Auth.ts
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
 import type { UserCredential } from 'firebase/auth';
 
 // src/firebaseConfig.ts
@@ -7,6 +7,11 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import type { User } from "../models/user";
 import { getDatabase, ref, set } from 'firebase/database';
+
+export interface UserAuthCallback {
+    onUserLoggedIn: (user: User) => void,
+    onUnauthenticated: () => void
+}
 
 export type FirebaseConfigProperties = {
     apiKey: string,
@@ -31,16 +36,18 @@ const firebaseConfig: FirebaseConfigProperties = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
 
 export class NotValidCredentialsError extends Error {
 }
 
 class FirebaseConnectionHandler {
+    getUser(): User {
+        return { firebaseUserID: getAuth().currentUser?.uid || "" }
+    }
 
     async login(email: string, password: string): Promise<User> {
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
             return { firebaseUserID: userCredential.user.uid };
         } catch (error) {
             console.error('Login failed:', error);
@@ -52,7 +59,7 @@ class FirebaseConnectionHandler {
 
     async logout(): Promise<void> {
         try {
-            await signOut(auth);
+            await signOut(getAuth());
         } catch (error) {
             console.error('Logout failed:', error);
         }
@@ -73,6 +80,15 @@ class FirebaseConnectionHandler {
             username: holdNavn,
             email: email,
             password: password,
+        });
+    }
+    registerAuthCallback(callback: UserAuthCallback) {
+        onAuthStateChanged(getAuth(), (userCredential) => {
+            if (userCredential) {
+                callback.onUserLoggedIn({firebaseUserID: userCredential.uid});
+            } else {
+                callback.onUnauthenticated();
+            }
         });
     }
 }
