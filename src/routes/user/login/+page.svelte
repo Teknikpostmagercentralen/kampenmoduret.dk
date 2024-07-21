@@ -15,7 +15,7 @@
 
         try {
             const user = await FirebaseConnection.login(email, password)
-            console.log(`Logged in ${user.userID}`)
+            console.log(`Logged in ${user.firebaseUserID}`)
 
             await userState.update((state: UserState) => {
                 return {
