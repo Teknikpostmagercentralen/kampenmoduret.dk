@@ -1,13 +1,18 @@
 <script lang="ts">
+    import {FirebaseConnection} from "../../../lib/firebase/firebaseconnection";
+
     let email: string;
     let teamName: string;
     let password: string;
     let success: boolean | undefined;
     let error: { code: string; message: string };
+    let user = {uid: "geh"} //fixme Delete this line
 
     function register() {
         FirebaseConnection.register(teamName, email, password)
     }
+
+
     
 </script>
 

@@ -1,12 +1,19 @@
 // src/Auth.ts
-import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
-import type { UserCredential } from 'firebase/auth';
+import {
+    createUserWithEmailAndPassword,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    signOut,
+    updateProfile
+} from 'firebase/auth';
+import type {UserCredential} from 'firebase/auth';
 
 // src/firebaseConfig.ts
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import type { User } from "../models/user";
-import { getDatabase, ref, set } from 'firebase/database';
+import {initializeApp} from 'firebase/app';
+import {getAuth} from 'firebase/auth';
+import type {User} from "../models/user";
+import {getDatabase, ref, set} from 'firebase/database';
+import {FirebaseUserAdder} from "./firebaseUserAdder";
 
 export interface UserAuthCallback {
     onUserLoggedIn: (user: User) => void,
@@ -42,13 +49,13 @@ export class NotValidCredentialsError extends Error {
 
 class FirebaseConnectionHandler {
     getUser(): User {
-        return { firebaseUserID: getAuth().currentUser?.uid || "" }
+        return {firebaseUserID: getAuth().currentUser?.uid || ""}
     }
 
     async login(email: string, password: string): Promise<User> {
         try {
             const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
-            return { firebaseUserID: userCredential.user.uid };
+            return {firebaseUserID: userCredential.user.uid};
         } catch (error) {
             console.error('Login failed:', error);
             throw new NotValidCredentialsError("Credentials not found")
@@ -66,22 +73,34 @@ class FirebaseConnectionHandler {
     }
 
     async register(holdNavn: string, email: string, password: string): Promise<void> {
-        await createUserWithEmailAndPassword(auth, email, password)
-            .then(async (userCredential: UserCredential) => {
-                await updateProfile(userCredential.user, { displayName: holdNavn });
-                await this.writeUserData(userCredential.user.uid, holdNavn, password, email);
-            })
-            .catch((newError: any) => {
-            });
+
+        const uidOfNewUser = await FirebaseUserAdder.createNewUser(holdNavn, email, password)
+
+        //fixme this is here to make sure firebase known who I am.
+        //  otherwise it will not work when write.
+        //  Fix this, it does not seem right
+        //  And might give us more issues in the future
+        await this.registerAuthCallback({
+            onUnauthenticated(): void {
+                console.log("error")
+            }, onUserLoggedIn(user: User): void {
+                console.log(`user ${user.firebaseUserID}`)
+            }
+        })
+
+        await this.writeUserData(uidOfNewUser, holdNavn, password, email);
+
     }
-    writeUserData(uid: string, holdNavn: string, password: string, email: string) {
-        const db = getDatabase();
-        set(ref(db, `teams/${uid}`), {
+
+    async writeUserData(uid: string, holdNavn: string, password: string, email: string) {
+        const db = getDatabase(app);
+        await set(ref(db, `teams/${uid}`), {
             username: holdNavn,
             email: email,
             password: password,
         });
     }
+
     registerAuthCallback(callback: UserAuthCallback) {
         onAuthStateChanged(getAuth(), (userCredential) => {
             if (userCredential) {
@@ -92,7 +111,6 @@ class FirebaseConnectionHandler {
         });
     }
 }
-
 
 
 export const FirebaseConnection = new FirebaseConnectionHandler();
