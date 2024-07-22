@@ -6,7 +6,7 @@ import {
     signOut,
     updateProfile
 } from 'firebase/auth';
-import type { UserCredential } from 'firebase/auth';
+import type { IdTokenResult, Unsubscribe, UserCredential } from 'firebase/auth';
 
 // src/firebaseConfig.ts
 import { initializeApp } from 'firebase/app';
@@ -16,11 +16,11 @@ import { getDatabase, ref, set, child, get } from 'firebase/database';
 import { FirebaseUserAdder } from "./firebaseUserAdder";
 import { FirebaseContants } from "./firebasecontants";
 import type { Task } from "../models/task";
-import type { TasksInTeams } from "../models/tasks-in-teams";
+import type { CompletedTaskInTeams } from "../models/completed-task-in-teams";
+import type { TeamCreationData } from '$lib/models/team';
 
-export interface UserAuthCallback {
-    onUserLoggedIn: (user: User) => void,
-    onUnauthenticated: () => void
+export interface FirebaseDataCallback<T> {
+    onDataChanged: (data: T) => void
 }
 
 export type FirebaseConfigProperties = {
@@ -50,9 +50,53 @@ const app = initializeApp(firebaseConfig);
 export class NotValidCredentialsError extends Error {
 }
 
-class FirebaseConnectionHandler {
-    getUser(): User {
-        return { firebaseUserID: getAuth().currentUser?.uid || "" }
+export class FirebaseConnection {
+    private constructor() {
+        
+    }
+
+    private static instance : FirebaseConnection;
+
+    private userState : {uid: string, loggedIn: boolean} = {uid: "", loggedIn: false};
+
+    private unsubscribeMethodsFromListeners: Unsubscribe[] = [];
+
+    static async getInstance() : Promise<FirebaseConnection> {
+        if (!FirebaseConnection.instance) {
+            FirebaseConnection.instance = new FirebaseConnection();
+            await FirebaseConnection.instance.registerInternalUserListenerToUpdateUserDataContinously();
+        }
+        return FirebaseConnection.instance;
+    }
+
+    private registerInternalUserListenerToUpdateUserDataContinously() {
+        onAuthStateChanged(getAuth(), (userCredential) => {
+            if (userCredential) {
+                this.userState = {uid: userCredential.uid, loggedIn: true};
+            } else {
+                this.userState = {uid: "", loggedIn: false};
+            }
+        });
+    }
+
+    registerUserListener(callback: FirebaseDataCallback<User>) {
+        const unsubscribe = onAuthStateChanged(getAuth(), (userCredential) => {
+            if (userCredential) {
+                callback.onDataChanged({ firebaseUserID: this.userState.uid })
+            } else {
+                callback.onDataChanged({ firebaseUserID: "" })
+            }
+        });
+        this.unsubscribeMethodsFromListeners.push(unsubscribe);
+    }
+
+    onUserReady(callback : () => void) {
+        const unsubscribe = onAuthStateChanged(getAuth(), (userCredential) => {
+            if (userCredential) {
+                callback();
+                unsubscribe();
+            }
+        });
     }
 
     async login(email: string, password: string): Promise<User> {
@@ -106,21 +150,12 @@ class FirebaseConnectionHandler {
 
     async writeUserData(uid: string, holdNavn: string, password: string, email: string) {
         const db = getDatabase(app);
-        await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${uid}`), {
+        const teamData : TeamCreationData = {
             username: holdNavn,
             email: email,
             password: password,
-        });
-    }
-
-    registerAuthCallback(callback: UserAuthCallback) {
-        onAuthStateChanged(getAuth(), (userCredential) => {
-            if (userCredential) {
-                callback.onUserLoggedIn({ firebaseUserID: userCredential.uid });
-            } else {
-                callback.onUnauthenticated();
-            }
-        });
+        }
+        await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${uid}`), teamData);
     }
 
     async writeTaskCompleted(taskID: string): Promise<void> {
@@ -150,12 +185,16 @@ class FirebaseConnectionHandler {
         const multiplier = 1 //todo: at some point we calculate the multiplier right here. FOr the moment its set to 1 always
         //todo think about weather or not this logic belongs in FirebaseConnector. Maybe multiplier to the game,
 
-        const taskToWrite: TasksInTeams = { baseTime: task.baseTime, multiplier: 1, timeEarned: 0 }
+        const taskToWrite: CompletedTaskInTeams = { baseTime: task.baseTime, multiplier: 1, timeEarned: 0 }
 
         await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.TEAM_TASKS}/${taskID}`), taskToWrite)
         return Promise.resolve()
     }
+
+    killAllListenersFromThisPage() {
+		for (const unsubscribe of this.unsubscribeMethodsFromListeners) {
+            unsubscribe();
+        }
+        this.unsubscribeMethodsFromListeners = [];
+	}
 }
-
-
-export const FirebaseConnection = new FirebaseConnectionHandler();

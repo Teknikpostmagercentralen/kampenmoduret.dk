@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { FirebaseConnection } from '$lib/firebase/firebaseconnection';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -7,8 +7,12 @@
 	export let data;
 
 	if (browser) {
-		FirebaseConnection.writeTaskCompleted(data.taskID).then(() => {
-			goto('/game');
+		FirebaseConnection.getInstance().then((instance) => {
+			instance.onUserReady(() => {
+				instance.writeTaskCompleted(data.taskID).then(() => {
+					goto('/game');
+				});
+			});
 		});
 	}
 </script>

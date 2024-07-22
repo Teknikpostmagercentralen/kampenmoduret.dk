@@ -11,7 +11,11 @@
 
     function register() {
         if (browser) {
-            FirebaseConnection.register(teamName, email, password)
+            FirebaseConnection.getInstance().then((instance)=>{
+                instance.onUserReady(()=>{
+                    instance.register(teamName, email, password);
+                });
+            });
         }
     }
 
