@@ -29,13 +29,23 @@
 <main>
 	<button
 		on:click={() => {
-			goto('/tasks/123');
-		}}>Add task 123</button
+			goto('/tasks/A1');
+		}}>Add task A1</button
 	>
 	<button
 		on:click={() => {
 			goto('/admin/registerTeam');
 		}}>Add team</button
+	>
+	<button
+		on:click={() => {
+			goto('/user/login');
+		}}>Login</button
+	>
+	<button
+		on:click={() => {
+			goto('/user/logout');
+		}}>Logout</button
 	>
 	{#if user}
 		<h1>This is the {user.firebaseUserID}</h1>

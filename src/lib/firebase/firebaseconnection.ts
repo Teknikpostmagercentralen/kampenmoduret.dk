@@ -18,6 +18,7 @@ import { FirebaseContants } from "./firebasecontants";
 import type { Task } from "../models/task";
 import type { CompletedTaskInTeams } from "../models/completed-task-in-teams";
 import type { TeamCreationData } from '$lib/models/team';
+import type { Game } from '$lib/models/game';
 
 export interface FirebaseDataCallback<T> {
     onDataChanged: (data: T) => void
@@ -158,6 +159,17 @@ export class FirebaseConnection {
         await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${uid}`), teamData);
     }
 
+    async getGame(): Promise<Game | false> {
+        const db = getDatabase(app);
+        const snapshot = await get(ref(db, `${FirebaseContants.GAME_ROOT}`))
+        if (!snapshot || !snapshot.exists()) {
+            console.error("Game does not exist")
+            return false
+        }
+        const game: Game = snapshot.val()
+        return game
+    }
+
     async writeTaskCompleted(taskID: string): Promise<void> {
         const auth = getAuth(app);
         const currentUser = auth.currentUser;
@@ -182,10 +194,12 @@ export class FirebaseConnection {
             return
         } //fixme if this ever happens in reality we fix it for real. Otherwise we remote it as it is a theoprwetical mistake
 
-        const multiplier = 1 //todo: at some point we calculate the multiplier right here. FOr the moment its set to 1 always
+        const game = await this.getGame()
+        if (!game) return
+        const multiplier = game.multiplier //todo: at some point we calculate the multiplier right here. FOr the moment its set to the value from the game always
         //todo think about weather or not this logic belongs in FirebaseConnector. Maybe multiplier to the game,
 
-        const taskToWrite: CompletedTaskInTeams = { baseTime: task.baseTime, multiplier: 1, timeEarned: 0 }
+        const taskToWrite: CompletedTaskInTeams = { baseTime: task.baseTime, multiplier: 1, timeEarned: task.baseTime * multiplier, taskMarker: task.taskMarker }
 
         await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.TEAM_TASKS}/${taskID}`), taskToWrite)
         return Promise.resolve()
