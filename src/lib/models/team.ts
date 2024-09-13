@@ -4,7 +4,9 @@ import type { TaskMarker } from "./task";
 export interface Team {
     username: string,
     email: string,
-    lastCompletedTask? : TaskMarker
+    bonusTime: number,
+    participants: number,
+    lastCompletedTask? : TaskMarker,
     completedTasks?: {[taskId:string]:CompletedTaskInTeams}
 }
 export interface TeamCreationData extends Team {

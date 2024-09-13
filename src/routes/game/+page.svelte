@@ -8,46 +8,66 @@
 
 	let user: User;
 
-    async function getUser() {
-        const firebaseConnection = await FirebaseConnection.getInstance();
-        firebaseConnection.registerUserListener({onDataChanged:(userUpdate)=>{
-            user = userUpdate;
-        }});
-    }
+	async function getUser() {
+		const firebaseConnection = await FirebaseConnection.getInstance();
+		firebaseConnection.registerUserListener({
+			onDataChanged: (userUpdate) => {
+				user = userUpdate;
+			}
+		});
+	}
 
 	if (browser) {
 		getUser();
 	}
 
-    onDestroy(async ()=>{
-        await FirebaseConnection.getInstance().then((instance)=>{
-            instance.killAllListenersFromThisPage();
-        });
-    });
+	onDestroy(async () => {
+		await FirebaseConnection.getInstance().then((instance) => {
+			instance.killAllListenersFromThisPage();
+		});
+	});
+
+	let timeLeft = 10; // Set the starting time
+	let participants = 8;
+
+	// Timer countdown logic
+	const countdown = () => {
+		if (timeLeft > 0) {
+			setTimeout(() => {
+				timeLeft--;
+				countdown();
+			}, 1000);
+		}
+	};
+
+	function addZero(input: number): string {
+		if (input < 10) {
+			return `0${input}`;
+		} else {
+			return `${input}`;
+		}
+	}
+
+	const formatTime = (time) => {
+		const m = Math.floor(time / 60);
+		const s = time % 60;
+		return `${addZero(m)}:${addZero(s)}`;
+	};
+
+	countdown();
 </script>
 
 <main>
-	<button
-		on:click={() => {
-			goto('/tasks/A1');
-		}}>Add task A1</button
+	<div
+		class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center ${timeLeft === 0 ? 'has-background-danger' : 'has-background-success'}`}
 	>
-	<button
-		on:click={() => {
-			goto('/admin/registerTeam');
-		}}>Add team</button
-	>
-	<button
-		on:click={() => {
-			goto('/user/login');
-		}}>Login</button
-	>
-	<button
-		on:click={() => {
-			goto('/user/logout');
-		}}>Logout</button
-	>
-	{#if user}
-		<h1>This is the {user.firebaseUserID}</h1>
-	{/if}
+		<div class="has-text-white has-text-centered" style="font-size: 10vw;">
+			{formatTime(timeLeft)}
+		</div>
+
+		<!-- Lower right corner number -->
+		<div class="has-text-white" style="position: absolute; bottom: 20px; right: 20px; font-size: 2vw;">
+			{participants}
+		</div>
+	</div>
 </main>

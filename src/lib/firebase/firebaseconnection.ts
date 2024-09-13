@@ -120,7 +120,7 @@ export class FirebaseConnection {
         }
     }
 
-    async register(holdNavn: string, email: string, password: string): Promise<void> {
+    async register(holdNavn: string, email: string, password: string, bonusTime: number, participants: number): Promise<void> {
 
         const uidOfNewUser = await FirebaseUserAdder.createNewUser(holdNavn, email, password)
 
@@ -145,16 +145,18 @@ export class FirebaseConnection {
             return;
         }
 
-        await this.writeUserData(uidOfNewUser, holdNavn, password, email);
+        await this.writeUserData(uidOfNewUser, holdNavn, password, email, bonusTime, participants);
 
     }
 
-    async writeUserData(uid: string, holdNavn: string, password: string, email: string) {
+    async writeUserData(uid: string, holdNavn: string, password: string, email: string, bonusTime: number, participants: number) {
         const db = getDatabase(app);
         const teamData : TeamCreationData = {
             username: holdNavn,
             email: email,
-            password: password,
+            bonusTime : bonusTime,
+            participants: participants,
+            password: password
         }
         await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${uid}`), teamData);
     }

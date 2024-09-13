@@ -1,25 +1,34 @@
 <script lang="ts">
 	import { browser } from "$app/environment";
+	import { goto, invalidateAll } from "$app/navigation";
     import {FirebaseConnection} from "../../../lib/firebase/firebaseconnection";
 
     let email: string;
     let teamName: string;
     let password: string;
+    let bonusTime: number;
+    let participants: number;
     let success: boolean | undefined;
     let error: { code: string; message: string };
     let user = {uid: "geh"} //fixme Delete this line
 
+    function resetForm() {
+        email = "";
+        teamName = "";
+        password = "";
+        bonusTime = 0;
+        participants = 0;
+    }
     function register() {
         if (browser) {
             FirebaseConnection.getInstance().then((instance)=>{
                 instance.onUserReady(()=>{
-                    instance.register(teamName, email, password);
+                    instance.register(teamName, email, password, bonusTime, participants);
+                    goto('/admin');
                 });
             });
         }
     }
-
-
     
 </script>
 
@@ -40,6 +49,30 @@
                         placeholder="Team name"
                         required
                         bind:value={teamName}
+                    />
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">Bonus Time</label>
+                <div class="control">
+                    <input
+                        type="number"
+                        class="input"
+                        placeholder="0"
+                        required
+                        bind:value={bonusTime}
+                    />
+                </div>
+            </div>
+            <div class="field">
+                <label class="label">Number of participants</label>
+                <div class="control">
+                    <input
+                        type="number"
+                        class="input"
+                        placeholder="0"
+                        required
+                        bind:value={participants}
                     />
                 </div>
             </div>
