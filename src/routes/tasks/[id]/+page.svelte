@@ -10,7 +10,7 @@
 		FirebaseConnection.getInstance().then((instance) => {
 			instance.onUserReady(() => {
 				instance.writeTaskCompleted(data.taskID).then(() => {
-					goto('/game');
+					//FIXME ENABLE AGAIN AFTER TEST goto('/game');
 				});
 			});
 		});

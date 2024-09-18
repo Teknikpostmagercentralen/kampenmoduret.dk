@@ -19,6 +19,7 @@ import type { Task } from "../models/task";
 import type { CompletedTaskInTeams } from "../models/completed-task-in-teams";
 import type { TeamCreationData } from '$lib/models/team';
 import type { Game } from '$lib/models/game';
+import {constants} from "../../gamecontants";
 
 export interface FirebaseDataCallback<T> {
     onDataChanged: (data: T) => void
@@ -196,14 +197,18 @@ export class FirebaseConnection {
             return
         } //fixme if this ever happens in reality we fix it for real. Otherwise we remote it as it is a theoprwetical mistake
 
-        const game = await this.getGame()
-        if (!game) return
-        const multiplier = game.multiplier //todo: at some point we calculate the multiplier right here. FOr the moment its set to the value from the game always
-        //todo think about weather or not this logic belongs in FirebaseConnector. Maybe multiplier to the game,
+        const multiplier = constants.MULTIPLIER
+
+        const pathToWrite = `${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.TEAM_TASKS}/${taskID}`
+        const snapshotOfTask = await get(ref(db, pathToWrite))
+        if (snapshotOfTask.exists()) {
+            console.error("The team has already solved this task")
+            return
+        }
 
         const taskToWrite: CompletedTaskInTeams = { baseTime: task.baseTime, multiplier: 1, timeEarned: task.baseTime * multiplier, taskMarker: task.taskMarker }
 
-        await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.TEAM_TASKS}/${taskID}`), taskToWrite)
+        await set(ref(db, pathToWrite), taskToWrite)
         return Promise.resolve()
     }
 
