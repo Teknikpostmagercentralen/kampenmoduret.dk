@@ -12,12 +12,12 @@ import type { IdTokenResult, Unsubscribe, UserCredential } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import type { User } from "../models/user";
-import { getDatabase, ref, set, child, get } from 'firebase/database';
+import { getDatabase, ref, set, child, get, onValue } from 'firebase/database';
 import { FirebaseUserAdder } from "./firebaseUserAdder";
 import { FirebaseContants } from "./firebasecontants";
 import type { Task } from "../models/task";
 import type { CompletedTaskInTeams } from "../models/completed-task-in-teams";
-import type { TeamCreationData } from '$lib/models/team';
+import type { Team, TeamCreationData } from '$lib/models/team';
 import type { Game } from '$lib/models/game';
 import {constants} from "../../gamecontants";
 
@@ -54,16 +54,17 @@ export class NotValidCredentialsError extends Error {
 
 export class FirebaseConnection {
     private constructor() {
-        
+
     }
 
-    private static instance : FirebaseConnection;
+    private static instance: FirebaseConnection;
 
-    private userState : {uid: string, loggedIn: boolean} = {uid: "", loggedIn: false};
+    private userState: { uid: string, loggedIn: boolean } = { uid: "", loggedIn: false };
 
     private unsubscribeMethodsFromListeners: Unsubscribe[] = [];
+    private teamUnsubscribeMethod: Unsubscribe | undefined;
 
-    static async getInstance() : Promise<FirebaseConnection> {
+    static async getInstance(): Promise<FirebaseConnection> {
         if (!FirebaseConnection.instance) {
             FirebaseConnection.instance = new FirebaseConnection();
             await FirebaseConnection.instance.registerInternalUserListenerToUpdateUserDataContinously();
@@ -74,9 +75,9 @@ export class FirebaseConnection {
     private registerInternalUserListenerToUpdateUserDataContinously() {
         onAuthStateChanged(getAuth(), (userCredential) => {
             if (userCredential) {
-                this.userState = {uid: userCredential.uid, loggedIn: true};
+                this.userState = { uid: userCredential.uid, loggedIn: true };
             } else {
-                this.userState = {uid: "", loggedIn: false};
+                this.userState = { uid: "", loggedIn: false };
             }
         });
     }
@@ -92,7 +93,18 @@ export class FirebaseConnection {
         this.unsubscribeMethodsFromListeners.push(unsubscribe);
     }
 
-    onUserReady(callback : () => void) {
+    registerTeamListener(user:User, callback: FirebaseDataCallback<Team>) {
+        const db = getDatabase();
+        const teamID = user.firebaseUserID
+        const starCountRef = ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamID}`);
+        this.teamUnsubscribeMethod;
+        const unsubscribe = onValue(starCountRef, (snapshot) => {
+            callback.onDataChanged(snapshot.val());
+        });
+        this.teamUnsubscribeMethod = unsubscribe;
+    }
+
+    onUserReady(callback: () => void) {
         const unsubscribe = onAuthStateChanged(getAuth(), (userCredential) => {
             if (userCredential) {
                 callback();
@@ -152,10 +164,10 @@ export class FirebaseConnection {
 
     async writeUserData(uid: string, holdNavn: string, password: string, email: string, bonusTime: number, participants: number) {
         const db = getDatabase(app);
-        const teamData : TeamCreationData = {
+        const teamData: TeamCreationData = {
             username: holdNavn,
             email: email,
-            bonusTime : bonusTime,
+            bonusTime: bonusTime,
             participants: participants,
             password: password
         }
@@ -213,9 +225,23 @@ export class FirebaseConnection {
     }
 
     killAllListenersFromThisPage() {
-		for (const unsubscribe of this.unsubscribeMethodsFromListeners) {
+        for (const unsubscribe of this.unsubscribeMethodsFromListeners) {
             unsubscribe();
         }
+        this.teamUnsubscribeMethod;
         this.unsubscribeMethodsFromListeners = [];
-	}
+    }
+
+    async getTeam(user: User): Promise<Team | false> {
+        const teamID = user.firebaseUserID;
+
+        const db = getDatabase(app);
+        const snapshot = await get(ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamID}`));
+        if (!snapshot || !snapshot.exists()) {
+            console.error("This team does not exist in firebase");
+            return false;
+        }
+        const team: Team = snapshot.val();
+        return team;
+    }
 }
