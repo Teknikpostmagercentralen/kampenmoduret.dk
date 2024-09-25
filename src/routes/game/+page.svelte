@@ -6,10 +6,14 @@
 	import type { User } from '$lib/models/user';
 	import { onDestroy } from 'svelte';
 	import type { Team } from '$lib/models/team';
+	import { calculateTimeLeft, getRunoutTimestamp } from '$lib/game/gameLogic';
+	import type { Game } from '$lib/models/game';
 
 	let user: User;
-	let timeLeft = 10; // Set the starting time
+	let timeLeft: number; // Set the starting time
+	let runoutTimestamp: number;
 	let team: Team;
+	let game: Game;
 
 	async function getUser() {
 		const firebaseConnection = await FirebaseConnection.getInstance();
@@ -17,16 +21,23 @@
 			onDataChanged: (userUpdate) => {
 				user = userUpdate;
 				firebaseConnection.registerTeamListener(user, {
-					onDataChanged: (teamUpdate) => {
+					onDataChanged: async (teamUpdate) => {
 						team = teamUpdate;
+						if (team && game) {
+							runoutTimestamp = await getRunoutTimestamp(team, game);
+						}
+					}
+				});
+				firebaseConnection.registerGameListener({
+					onDataChanged: async (gameUpdate) => {
+						game = gameUpdate;
+						if (team && game) {
+							runoutTimestamp = await getRunoutTimestamp(team, game);
+						}
 					}
 				});
 			}
 		});
-	}
-
-	if (browser) {
-		getUser();
 	}
 
 	onDestroy(async () => {
@@ -35,15 +46,12 @@
 		});
 	});
 
-	// Timer countdown logic
-	const countdown = () => {
-		if (timeLeft > 0) {
-			setTimeout(() => {
-				timeLeft--;
-				countdown();
-			}, 1000);
-		}
-	};
+	function updateTimeLeft() {
+		setTimeout(() => {
+			timeLeft = calculateTimeLeft(runoutTimestamp);
+			updateTimeLeft();
+		}, 1000);
+	}
 
 	function addZero(input: number): string {
 		if (input < 10) {
@@ -59,11 +67,14 @@
 		return `${addZero(m)}:${addZero(s)}`;
 	}
 
-	countdown();
+	if (browser) {
+		getUser();
+		updateTimeLeft();
+	}
 </script>
 
 <main>
-	{#if user && team}
+	{#if timeLeft && game.started}
 		<div
 			class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center ${timeLeft === 0 ? 'has-background-danger' : 'has-background-success'}`}
 		>
@@ -78,6 +89,15 @@
 			>
 				{team.participants}
 			</div>
+		</div>
+	{:else}
+		<div class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center has-background-warning`}>
+			{#if game}
+					<p class="title is-5">Waiting for game to start</p>
+			{:else}
+				<p class="title is-5">Loading</p>
+			{/if}
+			<progress class="progress is-info is-two-thirds" max="100" style="width: 66%;"></progress>
 		</div>
 	{/if}
 </main>

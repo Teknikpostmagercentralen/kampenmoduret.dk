@@ -19,7 +19,7 @@ import type { Task } from "../models/task";
 import type { CompletedTaskInTeams } from "../models/completed-task-in-teams";
 import type { Team, TeamCreationData } from '$lib/models/team';
 import type { Game } from '$lib/models/game';
-import {constants} from "../../gamecontants";
+import { constants } from "../../gamecontants";
 
 export interface FirebaseDataCallback<T> {
     onDataChanged: (data: T) => void
@@ -63,6 +63,7 @@ export class FirebaseConnection {
 
     private unsubscribeMethodsFromListeners: Unsubscribe[] = [];
     private teamUnsubscribeMethod: Unsubscribe | undefined;
+    private gameUnsubscribeMethod: Unsubscribe | undefined;
 
     static async getInstance(): Promise<FirebaseConnection> {
         if (!FirebaseConnection.instance) {
@@ -93,15 +94,25 @@ export class FirebaseConnection {
         this.unsubscribeMethodsFromListeners.push(unsubscribe);
     }
 
-    registerTeamListener(user:User, callback: FirebaseDataCallback<Team>) {
+    registerTeamListener(user: User, callback: FirebaseDataCallback<Team>) {
         const db = getDatabase();
         const teamID = user.firebaseUserID
-        const starCountRef = ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamID}`);
-        this.teamUnsubscribeMethod;
-        const unsubscribe = onValue(starCountRef, (snapshot) => {
+        const teamRef = ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamID}`);
+        this.teamUnsubscribeMethod; // This might be a function or null. If null nothing happens else it unsubscribes.
+        const unsubscribe = onValue(teamRef, (snapshot) => {
             callback.onDataChanged(snapshot.val());
         });
         this.teamUnsubscribeMethod = unsubscribe;
+    }
+
+    registerGameListener(callback: FirebaseDataCallback<Game>) {
+        const db = getDatabase();
+        const gameRef = ref(db, FirebaseContants.GAME_ROOT);
+        this.gameUnsubscribeMethod; // This might be a function or null. If null nothing happens else it unsubscribes.
+        const unsubscribe = onValue(gameRef, (snapshot) => {
+            callback.onDataChanged(snapshot.val());
+        });
+        this.gameUnsubscribeMethod = unsubscribe;
     }
 
     onUserReady(callback: () => void) {
@@ -229,6 +240,7 @@ export class FirebaseConnection {
             unsubscribe();
         }
         this.teamUnsubscribeMethod;
+        this.gameUnsubscribeMethod;
         this.unsubscribeMethodsFromListeners = [];
     }
 
