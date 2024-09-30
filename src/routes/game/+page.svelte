@@ -14,6 +14,7 @@
 	let runoutTimestamp: number;
 	let team: Team;
 	let game: Game;
+	let timeout : NodeJS.Timeout;
 
 	async function getUser() {
 		const firebaseConnection = await FirebaseConnection.getInstance();
@@ -41,13 +42,14 @@
 	}
 
 	onDestroy(async () => {
+		clearTimeout(timeout);
 		await FirebaseConnection.getInstance().then((instance) => {
 			instance.killAllListenersFromThisPage();
 		});
 	});
 
 	function updateTimeLeft() {
-		setTimeout(() => {
+		timeout = setTimeout(() => {
 			timeLeft = calculateTimeLeft(runoutTimestamp);
 			updateTimeLeft();
 		}, 1000);
