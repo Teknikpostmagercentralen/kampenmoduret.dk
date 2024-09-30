@@ -78,24 +78,24 @@
 		<div
 			class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center ${timeLeft === 0 ? 'has-background-danger' : 'has-background-success'}`}
 		>
-			<div class="has-text-white has-text-centered" style="font-size: 10vw;">
+			<div class="has-text-white has-text-centered" style="font-size: 8rem;">
 				{formatTime(timeLeft)}
 			</div>
 
 			<!-- Lower right corner number -->
 			<div
 				class="has-text-white"
-				style="position: absolute; bottom: 20px; right: 20px; font-size: 2vw;"
+				style="position: absolute; bottom: 20px; right: 20px; font-size: 2.5rem;"
 			>
 				{team.participants}
 			</div>
 		</div>
 	{:else}
 		<div class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center has-background-warning`}>
-			{#if game}
-					<p class="title is-5">Waiting for game to start</p>
+			{#if game && !game.started}
+					<p class="title is-4">Waiting for game to start</p>
 			{:else}
-				<p class="title is-5">Loading</p>
+				<p class="title is-4">Loading</p>
 			{/if}
 			<progress class="progress is-info is-two-thirds" max="100" style="width: 66%;"></progress>
 		</div>

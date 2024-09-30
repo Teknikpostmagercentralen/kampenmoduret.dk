@@ -12,13 +12,6 @@
     let error: { code: string; message: string };
     let user = {uid: "geh"} //fixme Delete this line
 
-    function resetForm() {
-        email = "";
-        teamName = "";
-        password = "";
-        bonusTime = 0;
-        participants = 0;
-    }
     function register() {
         if (browser) {
             FirebaseConnection.getInstance().then((instance)=>{

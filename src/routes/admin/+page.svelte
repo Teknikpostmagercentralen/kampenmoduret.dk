@@ -29,6 +29,11 @@
 <main>
 	<button
 		on:click={() => {
+			goto('/admin/createTask');
+		}}>Create new task</button
+	>
+	<button
+		on:click={() => {
 			goto('/tasks/A1');
 		}}>Add task A1</button
 	>

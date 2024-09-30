@@ -12,7 +12,7 @@ import type { IdTokenResult, Unsubscribe, UserCredential } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import type { User } from "../models/user";
-import { getDatabase, ref, set, child, get, onValue } from 'firebase/database';
+import { getDatabase, ref, set, child, get, onValue, push } from 'firebase/database';
 import { FirebaseUserAdder } from "./firebaseUserAdder";
 import { FirebaseContants } from "./firebasecontants";
 import type { Task } from "../models/task";
@@ -255,5 +255,20 @@ export class FirebaseConnection {
         }
         const team: Team = snapshot.val();
         return team;
+    }
+
+    async createTask(letter: string, number: number, baseTime: number) {
+        const db = getDatabase(app);
+        const taskData: Task = {
+            baseTime: baseTime,
+            taskMarker: {
+                letter: letter,
+                number: number
+            }
+        }
+        // Create a new task reference with an auto-generated id
+        const taskListRef = ref(db, FirebaseContants.TASKS_ROOT);
+        const newTaskRef = push(taskListRef);
+        await set(newTaskRef, taskData);
     }
 }
