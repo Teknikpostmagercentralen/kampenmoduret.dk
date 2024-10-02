@@ -53,6 +53,25 @@ const app = initializeApp(firebaseConfig);
 export class NotValidCredentialsError extends Error {
 }
 
+class TaskError implements Error {
+    constructor(message: string, name: string) {
+        this.message = message
+        this.name = name
+    }
+
+    message: string;
+    name: string;
+
+}
+
+export class TwoOfTheSameTaskError extends TaskError{
+
+    constructor(message: string) {
+        super(message, "SAME_LETTER")
+    }
+
+}
+
 export class FirebaseConnection {
     private constructor() {
 
@@ -222,6 +241,13 @@ export class FirebaseConnection {
             console.error("This task does not exist in firebase")
             return
         }
+        const gameSnapshot = await get(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.GAME_STARTED}`))
+
+        if(!gameSnapshot.exists() || gameSnapshot.val() === false) {
+            console.error("The game is not started")
+            return
+        }
+
         const task: Task = snapshot.val()
 
         const teamId = getAuth(app).currentUser?.uid
@@ -247,7 +273,7 @@ export class FirebaseConnection {
         const lastTask: TaskMarker = lastTaskSnapsHot.val()
 
         if(lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
-            //throw new Error("Your last tasks was this same letter")
+            throw new TwoOfTheSameTaskError("Your last tasks was this same letter")
         }
 
         const updates: { [key: string]: any } = {}

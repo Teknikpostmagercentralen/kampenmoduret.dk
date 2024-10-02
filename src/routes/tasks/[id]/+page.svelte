@@ -2,6 +2,7 @@
     import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
     import {goto} from '$app/navigation';
     import {browser} from '$app/environment';
+    import {TwoOfTheSameTaskError} from "../../../lib/firebase/firebaseconnection";
 
     /** @type {import('./$types').PageData} */
     export let data;
@@ -11,22 +12,42 @@
     if (browser) {
         FirebaseConnection.getInstance().then((instance) => {
             instance.onUserReady(() => {
-                try {
                     instance.writeTaskCompleted(data.taskID).then(() => {
+                        // No error, navigate immediately
                         goto('/game');
-                    });
-                } catch (e: any) {
-                    errormessage = "hjehjehejehe"
 
-                }
+                    }).catch((reason: TwoOfTheSameTaskError)=>{
+                        if(reason.name === "SAME_LETTER" ) errormessage = "You cannot check in tasks with the same letter twice in a row"
+                        console.log("lol")
+                        setTimeout(() => {
+                            goto('/game');
+                        }, 5000); // Delay in milliseconds
+                    })
             });
         });
     }
 </script>
 
-<h1>{data.taskID}
+<style>
+    .task-id {
+        color: black;
+        font-size: 2rem;
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .error-message {
+        font-size: 2rem;
+        color: red;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 10px;
+    }
+</style>
+
+<p class="task-id">{data.taskID}</p>
 
     {#if errormessage}
-        {errormessage}
+        <p class="error-message">{errormessage}</p>
     {/if}
-</h1>
+
