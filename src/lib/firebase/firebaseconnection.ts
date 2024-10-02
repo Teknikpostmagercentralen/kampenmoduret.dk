@@ -6,20 +6,21 @@ import {
     signOut,
     updateProfile
 } from 'firebase/auth';
-import type { IdTokenResult, Unsubscribe, UserCredential } from 'firebase/auth';
+import type {IdTokenResult, Unsubscribe, UserCredential} from 'firebase/auth';
 
 // src/firebaseConfig.ts
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import type { User } from "../models/user";
-import { getDatabase, ref, set, child, get, onValue, push } from 'firebase/database';
+import { getDatabase, ref, set, child, get, onValue, push, update } from 'firebase/database';
 import { FirebaseUserAdder } from "./firebaseUserAdder";
 import { FirebaseContants } from "./firebasecontants";
-import type { Task } from "../models/task";
+import type {Task, TaskMarker} from "../models/task";
 import type { CompletedTaskInTeams } from "../models/completed-task-in-teams";
 import type { Team, TeamCreationData } from '$lib/models/team';
 import type { Game } from '$lib/models/game';
 import { constants } from "../../gamecontants";
+import {updated} from "$app/stores";
 
 export interface FirebaseDataCallback<T> {
     onDataChanged: (data: T) => void
@@ -59,7 +60,7 @@ export class FirebaseConnection {
 
     private static instance: FirebaseConnection;
 
-    private userState: { uid: string, loggedIn: boolean } = { uid: "", loggedIn: false };
+    private userState: { uid: string, loggedIn: boolean } = {uid: "", loggedIn: false};
 
     private unsubscribeMethodsFromListeners: Unsubscribe[] = [];
     private teamUnsubscribeMethod: Unsubscribe | undefined;
@@ -86,9 +87,9 @@ export class FirebaseConnection {
     registerUserListener(callback: FirebaseDataCallback<User>) {
         const unsubscribe = onAuthStateChanged(getAuth(), (userCredential) => {
             if (userCredential) {
-                callback.onDataChanged({ firebaseUserID: this.userState.uid })
+                callback.onDataChanged({firebaseUserID: this.userState.uid})
             } else {
-                callback.onDataChanged({ firebaseUserID: "" })
+                callback.onDataChanged({firebaseUserID: ""})
             }
         });
         this.unsubscribeMethodsFromListeners.push(unsubscribe);
@@ -127,7 +128,7 @@ export class FirebaseConnection {
     async login(email: string, password: string): Promise<User> {
         try {
             const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
-            return { firebaseUserID: userCredential.user.uid };
+            return {firebaseUserID: userCredential.user.uid};
         } catch (error) {
             console.error('Login failed:', error);
             throw new NotValidCredentialsError("Credentials not found")
@@ -231,17 +232,36 @@ export class FirebaseConnection {
         } //fixme if this ever happens in reality we fix it for real. Otherwise we remote it as it is a theoprwetical mistake
 
         const multiplier = constants.MULTIPLIER
+        const teamDatabaseBasePath = `${FirebaseContants.TEAMS_ROOT}/${teamId}`
 
-        const pathToWrite = `${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.TEAM_TASKS}/${taskID}`
-        const snapshotOfTask = await get(ref(db, pathToWrite))
+        const pathToCompletedTaskInTasks = `${teamDatabaseBasePath}/${FirebaseContants.TEAM_TASKS}/${taskID}`
+        const snapshotOfTask = await get(ref(db, pathToCompletedTaskInTasks))
         if (snapshotOfTask.exists()) {
             console.error("The team has already solved this task")
             return
         }
 
-        const taskToWrite: CompletedTaskInTeams = { baseTime: task.baseTime, multiplier: 1, timeEarned: task.baseTime * multiplier, taskMarker: task.taskMarker }
+        const lastCompletedTaskPath = `${teamDatabaseBasePath}/${FirebaseContants.LAST_COMPLETED_TASK}`
 
-        await set(ref(db, pathToWrite), taskToWrite)
+        const lastTaskSnapsHot = await get(ref(db, lastCompletedTaskPath))
+        const lastTask: TaskMarker = lastTaskSnapsHot.val()
+
+        if(lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
+            //throw new Error("Your last tasks was this same letter")
+        }
+
+        const updates: { [key: string]: any } = {}
+
+        updates[pathToCompletedTaskInTasks] = {
+            baseTime: task.baseTime,
+            multiplier: 1,
+            timeEarned: task.baseTime * multiplier,
+            taskMarker: task.taskMarker
+        }
+
+        updates[lastCompletedTaskPath] = task.taskMarker
+
+        await update(ref(db), updates)
         return Promise.resolve()
     }
 
@@ -281,4 +301,5 @@ export class FirebaseConnection {
         const newTaskRef = push(taskListRef);
         await set(newTaskRef, taskData);
     }
+
 }
