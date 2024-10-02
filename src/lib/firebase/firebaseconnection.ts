@@ -196,6 +196,16 @@ export class FirebaseConnection {
         return game
     }
 
+    async getTasks(): Promise<Task[]> {
+        const db = getDatabase();
+        const snapshot = await get(ref(db, FirebaseContants.TASKS_ROOT))
+        if (!snapshot || !snapshot.exists()) {
+            throw new Error('Task data fetch error');
+        }
+        const tasks: Task[] = snapshot.val();
+        return tasks;
+    }
+
     async writeTaskCompleted(taskID: string): Promise<void> {
         const auth = getAuth(app);
         const currentUser = auth.currentUser;
