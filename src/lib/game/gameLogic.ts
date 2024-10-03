@@ -21,7 +21,6 @@ export async function getTimeLeft(team: Team, game: Game): Promise<number> {
     const bonusTime = team.bonusTime || 0;
     // Sum bonus and collected time
     const totalTimeCollectedFromTeam = collectedTime + bonusTime;
-    console.log(`totalCollectedTime: ${totalTimeCollectedFromTeam}`);
     // Get time since game start (using current time)
     if (game.startTimestamp) {
         const d = new Date();

@@ -27,6 +27,7 @@
                     if (reason.name === "AUTHENTICATION") errormessage = "You have to log in before solving a task"
                     if (reason.name === "TASK_NOT_FOUND_IN_FIREBASE") errormessage = "Task was not solved in Firebase"
                     if (reason.name === "GAME_NOT_STARTED") errormessage = "Game not started, wait until ready before solving a task!"
+                    if (reason.name === "TEAM_IS_DEAD") errormessage = "You have run out of time! So no more posts for you 😿️"
                     setTimeout(() => {
                         goto('/game');
                     }, 7000); // Delay in milliseconds

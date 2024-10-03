@@ -27,13 +27,14 @@
         <div class="control">
             <input
                     class="input"
-                    type="text"
+                    type="number"
                     bind:value={inputFieldValue}
                     placeholder="Enter new value"
             />
         </div>
     </div>
 
+    <p>Hel og kommatal understøttet skriv fx 1 eller 5 eller 1.6</p>
     <div class="control">
         <button class="button is-primary" on:click={saveNewValue}>Save</button>
     </div>

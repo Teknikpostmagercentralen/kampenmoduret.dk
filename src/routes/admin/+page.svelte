@@ -60,12 +60,12 @@
 	<button
 		on:click={() => {
 			goto('/admin/start');
-		}}>GO TO START PAGE</button
+		}}>Control game</button
 	>
 	<button
 			on:click={() => {
 			goto('/admin/set-multiplier');
-		}}>GO TO START PAGE</button
+		}}>Set multiplier</button
 	>
 	{#if user}
 		<h1>Current UID is {user.firebaseUserID}</h1>

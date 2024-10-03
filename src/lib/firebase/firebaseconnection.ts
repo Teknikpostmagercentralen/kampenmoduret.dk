@@ -12,7 +12,7 @@ import type {IdTokenResult, Unsubscribe, UserCredential} from 'firebase/auth';
 import {initializeApp} from 'firebase/app';
 import {getAuth} from 'firebase/auth';
 import type {User} from "../models/user";
-import {getDatabase, ref, set, child, get, onValue, push, update, serverTimestamp} from 'firebase/database';
+import {getDatabase, ref, set, child, remove, get, onValue, push, update, serverTimestamp} from 'firebase/database';
 import {FirebaseUserAdder} from "./firebaseUserAdder";
 import {FirebaseContants} from "./firebasecontants";
 import type {Task, TaskMarker} from "../models/task";
@@ -75,10 +75,17 @@ export class TaskNotFoundError extends TaskError {
     constructor(message: string) {
         super(message, "TASK_NOT_FOUND_IN_FIREBASE")
     }
-}export class GameNotStartedError extends TaskError {
+}
+export class GameNotStartedError extends TaskError {
 
     constructor(message: string) {
         super(message, "GAME_NOT_STARTED")
+    }
+}
+export class TeamIsDeadError extends TaskError {
+
+    constructor(message: string) {
+        super(message, "TEAM_IS_DEAD")
     }
 }
 
@@ -300,6 +307,11 @@ export class FirebaseConnection {
             console.error("User is not authenticated. Please log in.");
             throw new AuthenticationError("User is not authenticated. Please log in.");
         }
+
+        if(await this.isTeamDead(currentUser.uid)) {
+            throw new TeamIsDeadError("You cannot complete more tasks because you have run out of time")
+        }
+
         const db = getDatabase(app);
         const snapshot = await get(ref(db, `${FirebaseContants.TASKS_ROOT}/${taskID}`))
         if (!snapshot || !snapshot.exists()) {
@@ -420,4 +432,53 @@ export class FirebaseConnection {
         await set(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.MULTIPLIER}`), value)
 
     }
+
+    async undeathTeam(userId: string): Promise<void> {
+        const db = getDatabase()
+        await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${userId}/${FirebaseContants.DEATH_TIMESTAMP}`), null)
+
+    }
+    async setTeamDead(userId: string): Promise<void> {
+        const db = getDatabase()
+        await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${userId}/${FirebaseContants.DEATH_TIMESTAMP}`), serverTimestamp())
+    }
+
+    async isTeamDead(teamId: string): Promise<boolean> {
+        const db = getDatabase()
+        const snapshot = await get(ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.DEATH_TIMESTAMP}`))
+        const isdead = snapshot.exists()
+        console.log(isdead)
+        return Promise.resolve(isdead)
+    }
+
+    async resetAllTeams(): Promise<void> {
+        console.log("lol")
+        const db = getDatabase();
+        const snapshot = await get(ref(db, `${FirebaseContants.TEAMS_ROOT}`));
+
+        // Retrieve all teams
+
+        if (snapshot.exists()) {
+            const teams = snapshot.val();
+
+            // Iterate over all teams and remove the DEATH_TIMESTAMP for the user
+            const promises = Object.keys(teams).map(async (teamId) => {
+                console.log(teamId)
+                const updates: { [key: string]: any } = {}
+                updates[`${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.DEATH_TIMESTAMP}`] = null
+                updates[`${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.LAST_COMPLETED_TASK}`] = null
+                updates[`${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.TEAM_TASKS}`] = null
+
+                await update(ref(db), updates)
+
+            });
+
+            // Wait for all removals to complete
+            await Promise.all(promises);
+            console.log(`Game data removed  in all teams`);
+        } else {
+            console.log("No teams found.");
+        }
+    }
+
 }

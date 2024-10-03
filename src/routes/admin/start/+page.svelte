@@ -17,4 +17,12 @@
         });
 		}}>STOP game
     </button>
+    <button
+            on:click={async () => {
+                      await FirebaseConnection.getInstance().then(async (instance)=>{
+                      //await instance.stopGame()
+                      await instance.resetAllTeams()
+        });
+		}}>RESET game
+    </button>
 </main>

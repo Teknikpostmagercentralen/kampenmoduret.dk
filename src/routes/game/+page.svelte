@@ -25,7 +25,6 @@
 						team = teamUpdate;
 						if (team && game) {
 							timeLeft = await getTimeLeft(team, game);
-							console.log(timeLeft);
 						}
 					}
 				});
@@ -34,7 +33,6 @@
 						game = gameUpdate;
 						if (team && game) {
 							timeLeft = await getTimeLeft(team, game);
-							console.log(timeLeft);
 						}
 					}
 				});
@@ -53,9 +51,15 @@
 		timeout = setTimeout(async () => {
 			if (team && game) {
 				timeLeft = await getTimeLeft(team, game);
-				console.log(timeLeft);
 			}
-			updateTimeLeft();
+			if(timeLeft !== undefined && timeLeft <= 0) { //He's Dead, Jim
+				console.log("You dead jim")
+				await FirebaseConnection.getInstance().then(async (instance) => {
+					await instance.setTeamDead(user.firebaseUserID)
+				})
+			} else {
+				updateTimeLeft();
+			}
 		}, 1000);
 	}
 
@@ -77,6 +81,7 @@
 		getUser();
 		updateTimeLeft();
 	}
+
 </script>
 
 <main>
