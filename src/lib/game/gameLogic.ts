@@ -4,32 +4,36 @@ import type { Game } from "$lib/models/game";
 import type { TaskDictionary, Team } from "$lib/models/team";
 import type { BenchTask } from "vitest";
 
-function sumCollectedTime(completedTasks: TaskDictionary|undefined): number {
+function sumCollectedTime(completedTasks: TaskDictionary | undefined): number {
     let sum = 0;
     if (completedTasks) {
         Object.entries(completedTasks).forEach(([key, task]) => {
             sum += task.timeEarned;
-          });
+        });
     }
     return sum;
 }
 
-export async function getRunoutTimestamp(team: Team, game: Game): Promise<number> {
-    if (game.started) {
-        // Calculate the sum of teams collected time
-        const collectedTime = sumCollectedTime(team.completedTasks);
-        // Get teams bonus time
-        const bonusTime = team.bonusTime;
-        // Sum bonus and collected time
-        const totalTime = collectedTime+bonusTime;
-        // Get time since game start (using current time)
-        //const d = new Date();
-        //const timeSinceGameStart = game.startTimestamp - (d.getTime()/1000)
+export async function getTimeLeft(team: Team, game: Game): Promise<number> {
+    // Calculate the sum of teams collected time
+    const collectedTime = sumCollectedTime(team.completedTasks);
+    // Get teams bonus time
+    const bonusTime = team.bonusTime || 0;
+    // Sum bonus and collected time
+    const totalTimeCollectedFromTeam = collectedTime + bonusTime;
+    console.log(`totalCollectedTime: ${totalTimeCollectedFromTeam}`);
+    // Get time since game start (using current time)
+    if (game.startTimestamp) {
+        const d = new Date();
+        const timeSinceGameStart = Math.round((d.getTime() - game.startTimestamp) / 1000.0);
         // return total time minus time since game start or zero if result is negative
+        const timeLeft = totalTimeCollectedFromTeam - timeSinceGameStart;
+        if (timeLeft > 0) {
+            return timeLeft
+        } else {
+            return 0;
+        }
+    } else {
+        throw new Error("Makrelsalat");
     }
-    return 42;
-}
-
-export function calculateTimeLeft(runoutTimestamp:number): number {
-    return 42;
 }

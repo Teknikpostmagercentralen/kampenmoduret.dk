@@ -1,18 +1,17 @@
 <script lang="ts">
-	import {browser} from '$app/environment';
-	import {FirebaseConnection} from '../../lib/firebase/firebaseconnection';
-	import {onDestroy} from 'svelte';
-	import type {Team} from '$lib/models/team';
-	import {calculateTimeLeft, getRunoutTimestamp} from '$lib/game/gameLogic';
-	import type {Game} from '$lib/models/game';
-	import type {User} from "../../lib/models/user";
+	import { browser } from '$app/environment';
+	import { FirebaseConnection } from '../../lib/firebase/firebaseconnection';
+	import { onDestroy } from 'svelte';
+	import type { Team } from '$lib/models/team';
+	import { getTimeLeft } from '$lib/game/gameLogic';
+	import type { Game } from '$lib/models/game';
+	import type { User } from '../../lib/models/user';
 
 	let user: User;
 	let timeLeft: number; // Set the starting time
-	let runoutTimestamp: number;
 	let team: Team;
 	let game: Game;
-	let timeout : NodeJS.Timeout;
+	let timeout: NodeJS.Timeout;
 
 	async function getUser() {
 		const firebaseConnection = await FirebaseConnection.getInstance();
@@ -23,7 +22,8 @@
 					onDataChanged: async (teamUpdate) => {
 						team = teamUpdate;
 						if (team && game) {
-							runoutTimestamp = await getRunoutTimestamp(team, game);
+							timeLeft = await getTimeLeft(team, game);
+							console.log(timeLeft);
 						}
 					}
 				});
@@ -31,7 +31,8 @@
 					onDataChanged: async (gameUpdate) => {
 						game = gameUpdate;
 						if (team && game) {
-							runoutTimestamp = await getRunoutTimestamp(team, game);
+							timeLeft = await getTimeLeft(team, game);
+							console.log(timeLeft);
 						}
 					}
 				});
@@ -47,8 +48,11 @@
 	});
 
 	function updateTimeLeft() {
-		timeout = setTimeout(() => {
-			timeLeft = calculateTimeLeft(runoutTimestamp);
+		timeout = setTimeout(async () => {
+			if (team && game) {
+				timeLeft = await getTimeLeft(team, game);
+				console.log(timeLeft);
+			}
 			updateTimeLeft();
 		}, 1000);
 	}
@@ -74,7 +78,7 @@
 </script>
 
 <main>
-	{#if timeLeft && game && game.started}
+	{#if timeLeft !== undefined && game && game.started}
 		<div
 			class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center ${timeLeft === 0 ? 'has-background-danger' : 'has-background-success'}`}
 		>
@@ -91,9 +95,11 @@
 			</div>
 		</div>
 	{:else}
-		<div class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center has-background-warning`}>
+		<div
+			class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center has-background-warning`}
+		>
 			{#if game && !game.started}
-					<p class="title is-4">Waiting for game to start</p>
+				<p class="title is-4">Waiting for game to start</p>
 			{:else}
 				<p class="title is-4">Loading</p>
 			{/if}
