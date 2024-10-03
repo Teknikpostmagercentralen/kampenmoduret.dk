@@ -378,4 +378,10 @@ export class FirebaseConnection {
         const snap = await get(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.MULTIPLIER}`))
         return snap.val()
     }
+
+    async setMultiplierValue(value: number) {
+        const db = getDatabase()
+        await set(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.MULTIPLIER}`), value)
+
+    }
 }
