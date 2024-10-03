@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { userState } from '../../stores/userstate';
-	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
-	import { FirebaseConnection } from '../../lib/firebase/firebaseconnection';
-	import type { User } from '$lib/models/user';
-	import { onDestroy } from 'svelte';
+	import {goto} from '$app/navigation';
+	import {browser} from '$app/environment';
+	import {FirebaseConnection} from '../../lib/firebase/firebaseconnection';
+	import type {User} from '$lib/models/user';
+	import {onDestroy} from 'svelte';
 
 	let user: User;
 
@@ -16,13 +15,10 @@
     }
 
 	if (browser) {
-		getUser();
 		FirebaseConnection.getInstance().then(async (instance) => {
 			await instance.onUserReady(async () => {
-				const admin = await instance.isAdmin()
-				if(admin) {
-					await goto("game")
-				}
+				await getUser();
+
 
 			});
 		});
