@@ -13,6 +13,9 @@
 			await instance.logout();
 			await resetUserState();
 			await goto('/');
+            //Just for good measure
+            localStorage.clear();
+            sessionStorage.clear();
 		});
 	}
 </script>

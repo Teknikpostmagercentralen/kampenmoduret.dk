@@ -1,18 +1,15 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import { FirebaseConnection } from '$lib/firebase/firebaseconnection';
-	import { NotValidCredentialsError } from '../../../lib/firebase/firebaseconnection';
-	import { goto } from '$app/navigation';
-	import { userState } from '../../../stores/userstate';
-	import type { UserState } from '../../../stores/userstate';
+	import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
+	import {NotValidCredentialsError} from '../../../lib/firebase/firebaseconnection';
+	import {goto} from '$app/navigation';
+	import type {UserState} from '../../../stores/userstate';
+	import {userState} from '../../../stores/userstate';
 
 	let email: string = '';
 	let password: string = '';
 	let error: string | null = null;
 
 	async function handleLogin() {
-		// Placeholder login logic - replace with actual login logic
-
 		try {
 			const firebaseConnection = await FirebaseConnection.getInstance();
 			const user = await firebaseConnection.login(email, password);
@@ -30,7 +27,7 @@
 		} catch (e) {
 			if (e instanceof NotValidCredentialsError) {
 				console.log('Not valid credentials');
-				error = 'HEJ';
+				error = 'Not Valid Credentials';
 			}
 		}
 	}

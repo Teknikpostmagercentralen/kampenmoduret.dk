@@ -18,8 +18,6 @@
 		FirebaseConnection.getInstance().then(async (instance) => {
 			await instance.onUserReady(async () => {
 				await getUser();
-
-
 			});
 		});
 	}
@@ -36,7 +34,7 @@
 <main>
 	<button
 		on:click={() => {
-			goto('/admin/createTask');
+			goto('/admin/create-task');
 		}}>Create new task</button
 	>
 	<button
@@ -46,7 +44,7 @@
 	>
 	<button
 		on:click={() => {
-			goto('/admin/registerTeam');
+			goto('/admin/register-team');
 		}}>Add team</button
 	>
 	<button
