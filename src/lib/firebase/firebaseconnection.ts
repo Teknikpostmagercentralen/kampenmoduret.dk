@@ -72,6 +72,12 @@ export class TwoOfTheSameTaskError extends TaskError {
 
 }
 
+export class ThisIsTheSameTaskError extends TaskError {
+    constructor(message: string) {
+        super(message, "SAME_TASK_TWICE")
+    }
+}
+
 export class FirebaseConnection {
     private constructor() {
 
@@ -79,7 +85,7 @@ export class FirebaseConnection {
 
     private static instance: FirebaseConnection;
 
-    private userState: { uid: string, loggedIn: boolean} = {uid: "", loggedIn: false};
+    private userState: { uid: string, loggedIn: boolean } = {uid: "", loggedIn: false};
 
     private unsubscribeMethodsFromListeners: Unsubscribe[] = [];
     private teamUnsubscribeMethod: Unsubscribe | undefined;
@@ -164,7 +170,6 @@ export class FirebaseConnection {
     }
 
 
-
     async login(email: string, password: string): Promise<User> {
         try {
             const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
@@ -226,7 +231,7 @@ export class FirebaseConnection {
         await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${uid}`), teamData);
     }
 
-    async getAllTeams(): Promise<Team[]>{
+    async getAllTeams(): Promise<Team[]> {
         const db = getDatabase()
         const teamsSnapshot = await get(ref(db, `${FirebaseContants.TEAMS_ROOT}`))
         const teams = teamsSnapshot.val()
@@ -303,7 +308,10 @@ export class FirebaseConnection {
         const lastTaskSnapsHot = await get(ref(db, lastCompletedTaskPath))
         const lastTask: TaskMarker = lastTaskSnapsHot.val()
 
-        if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
+        if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter && lastTask.number === task.taskMarker.number) {
+            throw new ThisIsTheSameTaskError("You have alreadysolevedthisTask")
+
+        } else if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
             throw new TwoOfTheSameTaskError("Your last tasks was this same letter")
         }
 
@@ -321,7 +329,6 @@ export class FirebaseConnection {
         await update(ref(db), updates)
         return Promise.resolve()
     }
-
 
 
     killAllListenersFromThisPage() {
@@ -365,15 +372,15 @@ export class FirebaseConnection {
 
         const uid = this.userState.uid
 
-            const db = getDatabase()
-            return  await get(ref(db, `${FirebaseContants.ADMIN_ROOT}/${uid}`)).then((snapshot)=>{
-                return snapshot.exists()
-            }).catch(()=>{
-                return false
-            })
+        const db = getDatabase()
+        return await get(ref(db, `${FirebaseContants.ADMIN_ROOT}/${uid}`)).then((snapshot) => {
+            return snapshot.exists()
+        }).catch(() => {
+            return false
+        })
     }
 
-    async getGameMultiplier(){
+    async getGameMultiplier() {
         const db = getDatabase()
         const snap = await get(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.MULTIPLIER}`))
         return snap.val()

@@ -19,7 +19,7 @@
 
                     }).catch((reason: TwoOfTheSameTaskError)=>{
                         if(reason.name === "SAME_LETTER" ) errormessage = "You cannot check in tasks with the same letter twice in a row"
-                        console.log("lol")
+                        if(reason.name === "SAME_TASK_TWICE" ) errormessage = "You have already solved this task"
                         setTimeout(() => {
                             goto('/game');
                         }, 5000); // Delay in milliseconds

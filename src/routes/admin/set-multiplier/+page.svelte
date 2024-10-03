@@ -2,10 +2,7 @@
     import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
     import { onMount } from 'svelte';
 
-    let inputFieldValue: number = await FirebaseConnection.getInstance().then(async (instance) => {
-        return await instance.getGameMultiplier()
-    })
-
+    let inputFieldValue: number
     // Simulate getting the prefilled value from a script
     onMount(async () => {
         // This could be a call to an API or any other async data retrieval method
@@ -17,9 +14,8 @@
 
     // Function to handle saving the new value
     async function saveNewValue() {
-        await FirebaseConnection.getInstance(async (instance) => {
+        await FirebaseConnection.getInstance().then(async (instance) => {
             await instance.setMultiplierValue(inputFieldValue)
-
         })
         // Call your API or function to save the new value here
     }
