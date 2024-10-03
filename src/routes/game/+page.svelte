@@ -6,6 +6,7 @@
 	import { getTimeLeft } from '$lib/game/gameLogic';
 	import type { Game } from '$lib/models/game';
 	import type { User } from '../../lib/models/user';
+	import {goto} from "$app/navigation";
 
 	let user: User;
 	let timeLeft: number; // Set the starting time
@@ -16,8 +17,9 @@
 	async function getUser() {
 		const firebaseConnection = await FirebaseConnection.getInstance();
 		firebaseConnection.registerUserListener({
-			onDataChanged: (userUpdate) => {
+			onDataChanged: async (userUpdate) => {
 				user = userUpdate;
+				if (user.firebaseUserID === "") await goto("/user/login") //if not logged in redirect to login page
 				firebaseConnection.registerTeamListener(user, {
 					onDataChanged: async (teamUpdate) => {
 						team = teamUpdate;
