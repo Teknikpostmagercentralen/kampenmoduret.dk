@@ -74,7 +74,7 @@
 </script>
 
 <main>
-	{#if timeLeft && game.started}
+	{#if timeLeft && game && game.started}
 		<div
 			class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center ${timeLeft === 0 ? 'has-background-danger' : 'has-background-success'}`}
 		>

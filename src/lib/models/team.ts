@@ -7,7 +7,11 @@ export interface Team {
     bonusTime: number,
     participants: number,
     lastCompletedTask? : TaskMarker,
-    completedTasks?: {[taskId:string]:CompletedTaskInTeams}
+    completedTasks?: TaskDictionary
+}
+
+export interface TaskDictionary {
+    [taskId:string]:CompletedTaskInTeams
 }
 
 export interface TeamWithTime extends Team {
