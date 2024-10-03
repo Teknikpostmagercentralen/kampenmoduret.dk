@@ -3,11 +3,11 @@
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { FirebaseConnection } from '../../lib/firebase/firebaseconnection';
-	import type { User } from '$lib/models/user';
 	import { onDestroy } from 'svelte';
 	import type { Team } from '$lib/models/team';
 	import { calculateTimeLeft, getRunoutTimestamp } from '$lib/game/gameLogic';
 	import type { Game } from '$lib/models/game';
+	import type {User} from "../../lib/models/user";
 
 	let user: User;
 	let timeLeft: number; // Set the starting time

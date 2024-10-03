@@ -9,17 +9,17 @@ import {
 import type {IdTokenResult, Unsubscribe, UserCredential} from 'firebase/auth';
 
 // src/firebaseConfig.ts
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import type { User } from "../models/user";
-import { getDatabase, ref, set, child, get, onValue, push, update } from 'firebase/database';
-import { FirebaseUserAdder } from "./firebaseUserAdder";
-import { FirebaseContants } from "./firebasecontants";
+import {initializeApp} from 'firebase/app';
+import {getAuth} from 'firebase/auth';
+import type {User} from "../models/user";
+import {getDatabase, ref, set, child, get, onValue, push, update} from 'firebase/database';
+import {FirebaseUserAdder} from "./firebaseUserAdder";
+import {FirebaseContants} from "./firebasecontants";
 import type {Task, TaskMarker} from "../models/task";
-import type { CompletedTaskInTeams } from "../models/completed-task-in-teams";
-import type { Team, TeamCreationData } from '$lib/models/team';
-import type { Game } from '$lib/models/game';
-import { constants } from "../../gamecontants";
+import type {CompletedTaskInTeams} from "../models/completed-task-in-teams";
+import type {Team, TeamCreationData} from '$lib/models/team';
+import type {Game} from '$lib/models/game';
+import {constants} from "../../gamecontants";
 import {updated} from "$app/stores";
 
 export interface FirebaseDataCallback<T> {
@@ -64,7 +64,7 @@ class TaskError implements Error {
 
 }
 
-export class TwoOfTheSameTaskError extends TaskError{
+export class TwoOfTheSameTaskError extends TaskError {
 
     constructor(message: string) {
         super(message, "SAME_LETTER")
@@ -79,7 +79,7 @@ export class FirebaseConnection {
 
     private static instance: FirebaseConnection;
 
-    private userState: { uid: string, loggedIn: boolean } = {uid: "", loggedIn: false};
+    private userState: { uid: string, loggedIn: boolean} = {uid: "", loggedIn: false};
 
     private unsubscribeMethodsFromListeners: Unsubscribe[] = [];
     private teamUnsubscribeMethod: Unsubscribe | undefined;
@@ -94,14 +94,15 @@ export class FirebaseConnection {
     }
 
     private registerInternalUserListenerToUpdateUserDataContinously() {
-        onAuthStateChanged(getAuth(), (userCredential) => {
+        onAuthStateChanged(getAuth(), async (userCredential) => {
             if (userCredential) {
-                this.userState = { uid: userCredential.uid, loggedIn: true };
+                this.userState = {uid: userCredential.uid, loggedIn: true};
             } else {
-                this.userState = { uid: "", loggedIn: false };
+                this.userState = {uid: "", loggedIn: false};
             }
         });
     }
+
 
     registerUserListener(callback: FirebaseDataCallback<User>) {
         const unsubscribe = onAuthStateChanged(getAuth(), (userCredential) => {
@@ -243,7 +244,7 @@ export class FirebaseConnection {
         }
         const gameSnapshot = await get(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.GAME_STARTED}`))
 
-        if(!gameSnapshot.exists() || gameSnapshot.val() === false) {
+        if (!gameSnapshot.exists() || gameSnapshot.val() === false) {
             console.error("The game is not started")
             return
         }
@@ -272,7 +273,7 @@ export class FirebaseConnection {
         const lastTaskSnapsHot = await get(ref(db, lastCompletedTaskPath))
         const lastTask: TaskMarker = lastTaskSnapsHot.val()
 
-        if(lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
+        if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
             throw new TwoOfTheSameTaskError("Your last tasks was this same letter")
         }
 
@@ -290,6 +291,8 @@ export class FirebaseConnection {
         await update(ref(db), updates)
         return Promise.resolve()
     }
+
+
 
     killAllListenersFromThisPage() {
         for (const unsubscribe of this.unsubscribeMethodsFromListeners) {
@@ -328,4 +331,15 @@ export class FirebaseConnection {
         await set(newTaskRef, taskData);
     }
 
+    async isAdmin(): Promise<boolean> {
+
+        const uid = this.userState.uid
+
+            const db = getDatabase()
+            return  await get(ref(db, `${FirebaseContants.ADMIN_ROOT}/${uid}`)).then((snapshot)=>{
+                return snapshot.exists()
+            }).catch(()=>{
+                return false
+            })
+    }
 }

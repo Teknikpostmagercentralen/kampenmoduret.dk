@@ -17,6 +17,15 @@
 
 	if (browser) {
 		getUser();
+		FirebaseConnection.getInstance().then(async (instance) => {
+			await instance.onUserReady(async () => {
+				const admin = await instance.isAdmin()
+				if(admin) {
+					await goto("game")
+				}
+
+			});
+		});
 	}
 
     onDestroy(async ()=>{
@@ -24,6 +33,8 @@
             instance.killAllListenersFromThisPage();
         });
     });
+
+
 </script>
 
 <main>

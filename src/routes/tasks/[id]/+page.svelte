@@ -9,6 +9,7 @@
     let errormessage: string;
 
 
+    /** Fixme move to all the pages */
     if (browser) {
         FirebaseConnection.getInstance().then((instance) => {
             instance.onUserReady(() => {
