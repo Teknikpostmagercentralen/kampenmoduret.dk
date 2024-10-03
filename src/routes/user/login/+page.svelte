@@ -23,7 +23,14 @@
 				};
 			});
 
-			await goto('/game');
+			const isAdmin = await firebaseConnection.isAdmin()
+			if(isAdmin) {
+				await goto("/admin")
+			} else {
+				await goto('/game');
+
+			}
+
 		} catch (e) {
 			if (e instanceof NotValidCredentialsError) {
 				console.log('Not valid credentials');
