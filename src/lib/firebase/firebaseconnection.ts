@@ -12,7 +12,7 @@ import type {IdTokenResult, Unsubscribe, UserCredential} from 'firebase/auth';
 import {initializeApp} from 'firebase/app';
 import {getAuth} from 'firebase/auth';
 import type {User} from "../models/user";
-import {getDatabase, ref, set, child, get, onValue, push, update} from 'firebase/database';
+import {getDatabase, ref, set, child, get, onValue, push, update, serverTimestamp} from 'firebase/database';
 import {FirebaseUserAdder} from "./firebaseUserAdder";
 import {FirebaseContants} from "./firebasecontants";
 import type {Task, TaskMarker} from "../models/task";
@@ -147,7 +147,13 @@ export class FirebaseConnection {
 
     async startGame() {
         const db = getDatabase()
-        await set(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.GAME_STARTED}`), true)
+        const updates: { [key: string]: any } = {}
+
+        updates[`${FirebaseContants.GAME_ROOT}/${FirebaseContants.GAME_STARTED}`] = true
+        updates[`${FirebaseContants.GAME_ROOT}/${FirebaseContants.START_TIMESTAMP}`] = serverTimestamp()
+
+        await update(ref(db), updates)
+
 
     }
 
@@ -230,7 +236,7 @@ export class FirebaseConnection {
 
     }
 
-    async getGame(): Promise<Game | false> {
+    async getGame(): Promise<Game | false> { //fixme eewwww this should probably be null object or undefined.
         const db = getDatabase(app);
         const snapshot = await get(ref(db, `${FirebaseContants.GAME_ROOT}`))
         if (!snapshot || !snapshot.exists()) {
@@ -365,5 +371,11 @@ export class FirebaseConnection {
             }).catch(()=>{
                 return false
             })
+    }
+
+    async getGameMultiplier(){
+        const db = getDatabase()
+        const snap = await get(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.MULTIPLIER}`))
+        return snap.val()
     }
 }

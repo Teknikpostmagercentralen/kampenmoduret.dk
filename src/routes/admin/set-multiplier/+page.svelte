@@ -1,13 +1,17 @@
-<script>
+<script lang="ts">
+    import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
     import { onMount } from 'svelte';
 
-    let prefilledValue = '';
+    let prefilledValue: number = 0;
     let newValue = '';
 
     // Simulate getting the prefilled value from a script
-    onMount(() => {
+    onMount(async () => {
         // This could be a call to an API or any other async data retrieval method
-        prefilledValue = 'This is the prefilled value';
+        prefilledValue = await FirebaseConnection.getInstance().then((instance) => {
+            return instance.getGameMultiplier()
+
+        })
         newValue = prefilledValue;
     });
 

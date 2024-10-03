@@ -1,5 +1,5 @@
-<script>
-    import {FirebaseConnection} from "$lib/firebase/firebaseconnection.js";
+<script lang="ts">
+    import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
 </script>
 
 <main>

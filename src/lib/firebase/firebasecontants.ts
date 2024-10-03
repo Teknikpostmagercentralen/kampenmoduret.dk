@@ -6,5 +6,7 @@ export class FirebaseContants {
     static LAST_COMPLETED_TASK = "lastCompletedTask"
     static GAME_STARTED: string = "started";
     static ADMIN_ROOT = "admins"
+    static MULTIPLIER: string = "multiplier";
+    static START_TIMESTAMP: string = "startTimestamp";
 }
 
