@@ -139,6 +139,17 @@ export class FirebaseConnection {
         this.unsubscribeMethodsFromListeners.push(unsubscribe);
     }
 
+    registerTeamsListener(callback: FirebaseDataCallback<Team[]>) {
+        const db = getDatabase();
+        const teamsRef = ref(db, FirebaseContants.TEAMS_ROOT);
+        console.log("REgistering listener for teams")
+        const unsubscribe = onValue(teamsRef, (snapshot) => {
+            console.log(snapshot.val())
+            callback.onDataChanged(snapshot.val());
+        });
+        this.unsubscribeMethodsFromListeners.push(unsubscribe);
+    }
+
     registerTeamListener(user: User, callback: FirebaseDataCallback<Team>) {
         const db = getDatabase();
         const teamID = user.firebaseUserID
