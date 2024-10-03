@@ -53,7 +53,7 @@ const app = initializeApp(firebaseConfig);
 export class NotValidCredentialsError extends Error {
 }
 
-class TaskError implements Error {
+export class TaskError implements Error {
     constructor(message: string, name: string) {
         this.message = message
         this.name = name
@@ -64,7 +64,25 @@ class TaskError implements Error {
 
 }
 
-export class TwoOfTheSameTaskError extends TaskError {
+export class AuthenticationError extends TaskError {
+
+    constructor(message: string) {
+        super(message, "AUTHENTICATION")
+    }
+}
+export class TaskNotFoundError extends TaskError {
+
+    constructor(message: string) {
+        super(message, "TASK_NOT_FOUND_IN_FIREBASE")
+    }
+}export class GameNotStartedError extends TaskError {
+
+    constructor(message: string) {
+        super(message, "GAME_NOT_STARTED")
+    }
+}
+
+export class TwoOfTheSameLetterTaskInARowError extends TaskError {
 
     constructor(message: string) {
         super(message, "SAME_LETTER")
@@ -72,7 +90,7 @@ export class TwoOfTheSameTaskError extends TaskError {
 
 }
 
-export class ThisIsTheSameTaskError extends TaskError {
+export class AlreadySolvedTaskError extends TaskError {
     constructor(message: string) {
         super(message, "SAME_TASK_TWICE")
     }
@@ -262,26 +280,26 @@ export class FirebaseConnection {
         return tasks;
     }
 
-    async writeTaskCompleted(taskID: string): Promise<void> {
+    async writeTaskCompleted(taskID: string): Promise<Task> {
         const auth = getAuth(app);
         const currentUser = auth.currentUser;
 
         // Check if the user is authenticated
         if (!currentUser) {
             console.error("User is not authenticated. Please log in.");
-            return;
+            throw new AuthenticationError("User is not authenticated. Please log in.");
         }
         const db = getDatabase(app);
         const snapshot = await get(ref(db, `${FirebaseContants.TASKS_ROOT}/${taskID}`))
         if (!snapshot || !snapshot.exists()) {
             console.error("This task does not exist in firebase")
-            return
+            throw new TaskNotFoundError("Task not found in firebase")
         }
         const gameSnapshot = await get(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.GAME_STARTED}`))
 
         if (!gameSnapshot.exists() || gameSnapshot.val() === false) {
             console.error("The game is not started")
-            return
+            throw new GameNotStartedError("The game is not started")
         }
 
         const task: Task = snapshot.val()
@@ -290,17 +308,20 @@ export class FirebaseConnection {
 
         if (!teamId) {
             console.error("Firebase error uknown: errorcode ostemads")
-            return
+            throw new Error("Firebase error uknown: errorcode ostemads")
         } //fixme if this ever happens in reality we fix it for real. Otherwise we remote it as it is a theoprwetical mistake
 
-        const multiplier = constants.MULTIPLIER
+        const multiplier = await FirebaseConnection.getInstance().then(async (instance) => {
+            return await instance.getGameMultiplier()
+        })
+
         const teamDatabaseBasePath = `${FirebaseContants.TEAMS_ROOT}/${teamId}`
 
         const pathToCompletedTaskInTasks = `${teamDatabaseBasePath}/${FirebaseContants.TEAM_TASKS}/${taskID}`
         const snapshotOfTask = await get(ref(db, pathToCompletedTaskInTasks))
         if (snapshotOfTask.exists()) {
             console.error("The team has already solved this task")
-            return
+            throw new AlreadySolvedTaskError("You have already solved this task")
         }
 
         const lastCompletedTaskPath = `${teamDatabaseBasePath}/${FirebaseContants.LAST_COMPLETED_TASK}`
@@ -308,18 +329,15 @@ export class FirebaseConnection {
         const lastTaskSnapsHot = await get(ref(db, lastCompletedTaskPath))
         const lastTask: TaskMarker = lastTaskSnapsHot.val()
 
-        if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter && lastTask.number === task.taskMarker.number) {
-            throw new ThisIsTheSameTaskError("You have alreadysolevedthisTask")
-
-        } else if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
-            throw new TwoOfTheSameTaskError("Your last tasks was this same letter")
+     if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
+            throw new TwoOfTheSameLetterTaskInARowError("Your last tasks was this same letter")
         }
 
         const updates: { [key: string]: any } = {}
 
         updates[pathToCompletedTaskInTasks] = {
             baseTime: task.baseTime,
-            multiplier: 1,
+            multiplier: multiplier,
             timeEarned: task.baseTime * multiplier,
             taskMarker: task.taskMarker
         }
@@ -327,7 +345,7 @@ export class FirebaseConnection {
         updates[lastCompletedTaskPath] = task.taskMarker
 
         await update(ref(db), updates)
-        return Promise.resolve()
+        return Promise.resolve(task)
     }
 
 

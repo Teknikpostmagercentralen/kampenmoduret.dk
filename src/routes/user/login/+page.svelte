@@ -34,7 +34,28 @@
 		} catch (e) {
 			if (e instanceof NotValidCredentialsError) {
 				console.log('Not valid credentials');
-				error = 'Not Valid Credentials';
+				error = 'Invalid email or password. Please check your credentials and try again.';
+			} else if (e.code === 'auth/user-not-found') {
+				console.log('User not found');
+				error = 'No user found with this email address.';
+			} else if (e.code === 'auth/wrong-password') {
+				console.log('Wrong password');
+				error = 'The password you entered is incorrect.';
+			} else if (e.code === 'auth/invalid-email') {
+				console.log('Invalid email');
+				error = 'The email address is not properly formatted.';
+			} else if (e.code === 'auth/user-disabled') {
+				console.log('User account disabled');
+				error = 'This account has been disabled by an administrator.';
+			} else if (e.code === 'auth/too-many-requests') {
+				console.log('Too many requests');
+				error = 'We have blocked all requests from this device due to unusual activity. Please try again later.';
+			} else if (e.code === 'auth/network-request-failed') {
+				console.log('Network error');
+				error = 'A network error has occurred. Please check your connection and try again.';
+			} else {
+				console.error('An unknown error occurred:', e);
+				error = 'An unknown error occurred. Please try again later.';
 			}
 		}
 	}

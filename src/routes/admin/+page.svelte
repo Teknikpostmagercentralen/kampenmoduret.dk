@@ -56,9 +56,15 @@
 		on:click={() => {
 			goto('/user/logout');
 		}}>Logout</button
-	>	<button
+	>
+	<button
 		on:click={() => {
 			goto('/admin/start');
+		}}>GO TO START PAGE</button
+	>
+	<button
+			on:click={() => {
+			goto('/admin/set-multiplier');
 		}}>GO TO START PAGE</button
 	>
 	{#if user}
