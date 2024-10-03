@@ -9,6 +9,12 @@ export interface Team {
     lastCompletedTask? : TaskMarker,
     completedTasks?: {[taskId:string]:CompletedTaskInTeams}
 }
+
+export interface TeamWithTime extends Team {
+    secondsleft: number
+}
+
+
 export interface TeamCreationData extends Team {
     password: string,
 }

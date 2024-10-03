@@ -145,6 +145,20 @@ export class FirebaseConnection {
         });
     }
 
+    async startGame() {
+        const db = getDatabase()
+        await set(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.GAME_STARTED}`), true)
+
+    }
+
+    async stopGame() {
+        const db = getDatabase()
+        await set(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.GAME_STARTED}`), null)
+
+    }
+
+
+
     async login(email: string, password: string): Promise<User> {
         try {
             const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
@@ -204,6 +218,16 @@ export class FirebaseConnection {
             password: password
         }
         await set(ref(db, `${FirebaseContants.TEAMS_ROOT}/${uid}`), teamData);
+    }
+
+    async getAllTeams(): Promise<Team[]>{
+        const db = getDatabase()
+        const teamsSnapshot = await get(ref(db, `${FirebaseContants.TEAMS_ROOT}`))
+        const teams = teamsSnapshot.val()
+        //FIXME this will not work should be repackaged to team[]
+
+        return teams
+
     }
 
     async getGame(): Promise<Game | false> {

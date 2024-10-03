@@ -62,6 +62,10 @@
 		on:click={() => {
 			goto('/user/logout');
 		}}>Logout</button
+	>	<button
+		on:click={() => {
+			goto('/admin/start');
+		}}>GO TO START PAGE</button
 	>
 	{#if user}
 		<h1>Current UID is {user.firebaseUserID}</h1>
