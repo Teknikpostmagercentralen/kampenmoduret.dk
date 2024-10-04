@@ -37,6 +37,8 @@ export type FirebaseConfigProperties = {
     measurementId: string
 }
 
+console.log(import.meta.env.VITE_FIREBASE_API_KEY)
+
 const firebaseConfig: FirebaseConfigProperties = {
     databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "",
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "",
