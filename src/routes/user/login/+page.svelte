@@ -4,12 +4,25 @@
 	import {goto} from '$app/navigation';
 	import type {UserState} from '../../../stores/userstate';
 	import {userState} from '../../../stores/userstate';
+	import {browser} from "$app/environment";
 
 
 	let email: string = '';
 	let password: string = '';
 	let error: string | null = null;
 
+
+
+	if (browser) {
+		FirebaseConnection.getInstance().then(async (instance) => {
+			await instance.onUserReady(async () => {
+				const firebaseConnection = await FirebaseConnection.getInstance();
+				firebaseConnection.registerUserListener({onDataChanged:(userUpdate)=>{
+						if(userUpdate.firebaseUserID) goto("/game")
+					}});
+			});
+		});
+	}
 
 	async function handleLogin() {
 		try {
