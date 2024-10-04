@@ -46,6 +46,7 @@
 
     /* Styling for the text container */
     .text-container {
+        margin-top: -20px;
         text-align: center;
         font-family: 'Roboto', sans-serif;
         margin-bottom: 20px; /* Added margin to avoid overlap with button */
@@ -128,7 +129,7 @@
         cursor: pointer;
         animation: buttonDance 3s ease-in-out infinite;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
-        margin-top: 20px; /* Add margin to ensure it's not too close to the text */
+        margin-top: 10px; /* Add margin to ensure it's not too close to the text */
         margin-bottom: 2em;
     }
 
