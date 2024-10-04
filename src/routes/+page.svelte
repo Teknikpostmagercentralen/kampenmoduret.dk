@@ -129,7 +129,7 @@
         animation: buttonDance 3s ease-in-out infinite;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         margin-top: 20px; /* Add margin to ensure it's not too close to the text */
-        margin-bottom: 4em;
+        margin-bottom: 2em;
     }
 
     .wild-button:hover {
