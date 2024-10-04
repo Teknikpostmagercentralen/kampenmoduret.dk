@@ -1,5 +1,7 @@
 <script>
-    import { onMount } from 'svelte';
+  import {onDestroy, onMount} from 'svelte';
+
+  let interval
 
     // Function to update the time every second
     function updateTime() {
@@ -12,10 +14,14 @@
     // Use onMount for when the component is mounted
     onMount(() => {
         updateTime(); // Immediately show the time
-        const interval = setInterval(updateTime, 1000); // Update the time every second
-
-        return () => clearInterval(interval); // Cleanup on unmount
+        interval = setInterval(updateTime, 1000); // Update the time every second
     });
+
+    onDestroy(()=>{
+      clearInterval(interval);
+    })
+
+
 </script>
 <style>
     /* Gradient background */

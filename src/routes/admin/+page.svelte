@@ -83,15 +83,19 @@
             const timeleft = await getTimeLeft(team, gameDataFromFirebase)
             if (timeleft === 0) {
                 await FirebaseConnection.getInstance().then(async (instance) => {
-                    if(!await instance.isTeamDead(key)) await instance.setTeamDead(key) //only do this once
+                    if (!await instance.isTeamDead(key)) await instance.setTeamDead(key) //only do this once
                 })
             }
-            const teamWithTime: TeamWithTime = {...team, secondsLeft: timeleft, allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime}
+            const teamWithTime: TeamWithTime = {
+                ...team,
+                secondsLeft: timeleft,
+                allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime
+            }
             teamsWithTime.push(teamWithTime)
         }
 
         //Sort the thing to mak the game sorted
-        //fixme; this is VERY innefficient and c an be done in many more more clever ways. But are lazy and IT will have to due for now
+        //fixme; this is VERY inneficient and c an be done in many more more clever ways. But are lazy and IT will have to due for now
         teamsWithTime.sort((a, b) => b.allSecondsEarned - a.allSecondsEarned);
 
         teamsShownInTable = teamsWithTime

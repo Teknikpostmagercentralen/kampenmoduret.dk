@@ -4,18 +4,26 @@
     import {browser} from '$app/environment';
     import {TaskError, TwoOfTheSameLetterTaskInARowError} from "../../../lib/firebase/firebaseconnection";
     import type {Task} from "../../../lib/models/task";
+    import {onDestroy} from "svelte";
 
     /** @type {import('./$types').PageData} */
     export let data;
     let errormessage: string;
     let taskSolved: Task;
+    let interval
+
+    onDestroy(()=>{
+        clearInterval(interval);
+    })
 
 
     if (browser) {
         FirebaseConnection.getInstance().then((instance) => {
-            if (!instance.isLoggedIn()) goto("/user/login")
-
+            interval = setInterval(()=>{
+                if (!instance.isLoggedIn()) goto("/user/login")
+            }, 2000)
             instance.onUserReady(() => {
+                clearInterval(interval)
                 instance.writeTaskCompleted(data.taskID).then((task: Task) => {
                     // No error, navigate immediately
                     taskSolved = task
