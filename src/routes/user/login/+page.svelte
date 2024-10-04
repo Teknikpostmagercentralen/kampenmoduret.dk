@@ -9,6 +9,9 @@
 	let password: string = '';
 	let error: string | null = null;
 
+	let test = import.meta.env.VITE_FIREBASE_API_KEY
+	console.log(test)
+
 	async function handleLogin() {
 		try {
 			const firebaseConnection = await FirebaseConnection.getInstance();
