@@ -1,11 +1,21 @@
 <script>
+    import { onMount } from 'svelte';
 
+    // Function to update the time every second
+    function updateTime() {
+        const date = new Date();
+        const timeElement = document.getElementById('time');
+        const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/London' };
+        timeElement.innerText = "It's London o'clock! Keep calm, it's currently: " + date.toLocaleTimeString('en-GB', options);
+    }
 
-    import {PUBLIC_FIREBASE_API_KEY, PUBLIC_FIREBASE_DATABASE_URL} from '$env/static/public';
+    // Use onMount for when the component is mounted
+    onMount(() => {
+        updateTime(); // Immediately show the time
+        const interval = setInterval(updateTime, 1000); // Update the time every second
 
-    console.log("lol ", PUBLIC_FIREBASE_DATABASE_URL)
-    console.log("lol2 ", PUBLIC_FIREBASE_API_KEY)
-
+        return () => clearInterval(interval); // Cleanup on unmount
+    });
 </script>
 <style>
     /* Gradient background */
@@ -119,6 +129,7 @@
         animation: buttonDance 3s ease-in-out infinite;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         margin-top: 20px; /* Add margin to ensure it's not too close to the text */
+        margin-bottom: 4em;
     }
 
     .wild-button:hover {
@@ -154,7 +165,9 @@
     </div>
 
     <!-- Wild animated button -->
-    <button class="wild-button" on:click={() => window.location.href='user/login'}>
+    <button class="wild-button mt-6" on:click={() => window.location.href='user/login'}>
         Go to Login
     </button>
+    <!-- Time display with a funnier pun -->
+    <div id="time" class="has-text-white is-size-4 has-text-centered mt-10"></div>
 </main>

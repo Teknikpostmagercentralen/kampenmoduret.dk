@@ -66,7 +66,7 @@
 <style>
 
     .big-emojis {
-        font-size: 30vw; /* Fills about 30% of the viewport width */
+        font-size: 20vw; /* Fills about 30% of the viewport width */
         display: flex;
         justify-content: center;
         align-items: center;
