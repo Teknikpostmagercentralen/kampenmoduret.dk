@@ -1,13 +1,10 @@
 <script>
 
-    import {VITE_FIREBASE_API_KEY} from '$env/static/public';
 
-    console.log("LOLOLOLOLOLOLOLOLOLOLOLOL")
-    let test = import.meta.env.VITE_FIREBASE_API_KEY
+    import {PUBLIC_FIREBASE_API_KEY, PUBLIC_FIREBASE_DATABASE_URL} from '$env/static/public';
 
-    console.log("lol", test)
-    console.log("lolaltso", VITE_FIREBASE_API_KEY)
-
+    console.log(PUBLIC_FIREBASE_DATABASE_URL)
+    console.log(PUBLIC_FIREBASE_API_KEY)
 
 </script>
 <style>
