@@ -1,8 +1,12 @@
 <script lang="ts">
     import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
+
+
 </script>
 
+
 <main>
+
     <button
             on:click={async () => {
                   await FirebaseConnection.getInstance().then(async (instance)=>{

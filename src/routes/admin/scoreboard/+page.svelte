@@ -28,8 +28,8 @@
         for (const [key, team] of Object.entries(teamDataFromFirebase)) {
             const timeleft = await getTimeLeft(team, gameDataFromFirebase)
             if (timeleft === 0) {
-                FirebaseConnection.getInstance().then(async (instance) => {
-                    await instance.setTeamDead(key)
+                await FirebaseConnection.getInstance().then(async (instance) => {
+                    if(!await instance.isTeamDead(key)) await instance.setTeamDead(key) //only do this once
                 })
             }
             const teamWithTime: TeamWithTime = {...team, secondsLeft: timeleft, allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime}
@@ -48,7 +48,6 @@
             instance.registerTeamsListener({
                 onDataChanged: async (teamsUpdate) => {
                     teamDataFromFirebase = teamsUpdate
-
                     await updateTableData(); //trigger update on new team data if there is both game and teams already
 
                 }
@@ -56,7 +55,6 @@
             instance.registerGameListener({
                 onDataChanged: async (gameUpdate) => {
                     gameDataFromFirebase = gameUpdate;
-
                     await updateTableData(); //trigger update on new game data if there is both game and teams already
                 }
             });

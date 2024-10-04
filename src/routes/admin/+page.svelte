@@ -1,81 +1,102 @@
 <script lang="ts">
-	import {goto} from '$app/navigation';
-	import {browser} from '$app/environment';
-	import {FirebaseConnection} from '../../lib/firebase/firebaseconnection';
-	import type {User} from '$lib/models/user';
-	import {onDestroy} from 'svelte';
+    import {goto} from '$app/navigation';
+    import {browser} from '$app/environment';
+    import {FirebaseConnection} from '../../lib/firebase/firebaseconnection';
+    import type {User} from '$lib/models/user';
+    import {onDestroy} from 'svelte';
 
-	let user: User;
+    let user: User;
+    let displayName: string;
 
     async function getUser() {
         const firebaseConnection = await FirebaseConnection.getInstance();
-        firebaseConnection.registerUserListener({onDataChanged:(userUpdate)=>{
-            user = userUpdate;
-        }});
+        firebaseConnection.registerUserListener({
+            onDataChanged: (userUpdate) => {
+                user = userUpdate;
+            }
+        });
     }
 
-	if (browser) {
-		FirebaseConnection.getInstance().then(async (instance) => {
-			await instance.onUserReady(async () => {
-				await getUser();
-			});
-		});
-	}
+    if (browser) {
+        FirebaseConnection.getInstance().then(async (instance) => {
+            await instance.onUserReady(async () => {
+                await getUser();
+            });
+        });
+    }
 
-    onDestroy(async ()=>{
-        await FirebaseConnection.getInstance().then((instance)=>{
+    onDestroy(async () => {
+        await FirebaseConnection.getInstance().then((instance) => {
             instance.killAllListenersFromThisPage();
         });
     });
+
+    FirebaseConnection.getInstance().then(async (instance) => {
+        instance.onUserReady(async () => (
+            displayName = await instance.getAdminDisplayName()
+        ))
+    })
 
 
 </script>
 
 <main>
 
-	<button
-			on:click={() => {
+    {#if displayName}
+    <h2>Hello {displayName}</h2>
+    {/if}
+
+    <button
+            on:click={() => {
 			goto('/admin/scoreboard');
-		}}>See Scoreboard</button
-	>
+		}}>See Scoreboard
+    </button
+    >
 
 
-	<button
-		on:click={() => {
+    <button
+            on:click={() => {
 			goto('/admin/create-task');
-		}}>Create new task</button
-	>
-	<button
-		on:click={() => {
+		}}>Create new task
+    </button
+    >
+    <button
+            on:click={() => {
 			goto('/tasks/A1');
-		}}>Add task A1</button
-	>
-	<button
-		on:click={() => {
+		}}>Add task A1
+    </button
+    >
+    <button
+            on:click={() => {
 			goto('/admin/register-team');
-		}}>Add team</button
-	>
-	<button
-		on:click={() => {
+		}}>Add team
+    </button
+    >
+    <button
+            on:click={() => {
 			goto('/user/login');
-		}}>Login</button
-	>
-	<button
-		on:click={() => {
+		}}>Login
+    </button
+    >
+    <button
+            on:click={() => {
 			goto('/user/logout');
-		}}>Logout</button
-	>
-	<button
-		on:click={() => {
+		}}>Logout
+    </button
+    >
+    <button
+            on:click={() => {
 			goto('/admin/control-game');
-		}}>Control game</button
-	>
-	<button
-			on:click={() => {
+		}}>Control game
+    </button
+    >
+    <button
+            on:click={() => {
 			goto('/admin/set-multiplier');
-		}}>Set multiplier</button
-	>
-	{#if user}
-		<h1>Current UID is {user.firebaseUserID}</h1>
-	{/if}
+		}}>Set multiplier
+    </button
+    >
+    {#if user}
+        <h1>Current UID is {user.firebaseUserID}</h1>
+    {/if}
 </main>
