@@ -1,5 +1,11 @@
 <script>
-    let colors = ["#ff7e5f", "#feb47b", "#86A8E7", "#D16BA5"];
+
+
+    console.log("LOLOLOLOLOLOLOLOLOLOLOLOL")
+    let test = import.meta.env.VITE_FIREBASE_API_KEY
+    console.log("lol" , test)
+
+
 </script>
 <style>
     /* Gradient background */
