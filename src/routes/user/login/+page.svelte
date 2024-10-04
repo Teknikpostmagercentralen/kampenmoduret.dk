@@ -10,7 +10,7 @@
 	let error: string | null = null;
 
 	let test = import.meta.env.VITE_FIREBASE_API_KEY
-	console.log(test)
+	console.log("lol" , test)
 
 	async function handleLogin() {
 		try {
