@@ -1,11 +1,12 @@
 <script>
-    import { VITE_FIREBASE_API_KEY } from '$env/static/private';
+
+    import {VITE_FIREBASE_API_KEY} from '$env/static/public';
 
     console.log("LOLOLOLOLOLOLOLOLOLOLOLOL")
     let test = import.meta.env.VITE_FIREBASE_API_KEY
 
-    console.log("lol" , test)
-    console.log("lolaltso" , VITE_FIREBASE_API_KEY)
+    console.log("lol", test)
+    console.log("lolaltso", VITE_FIREBASE_API_KEY)
 
 
 </script>
@@ -25,9 +26,15 @@
 
     /* Animating background colors */
     @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        0% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0% 50%;
+        }
     }
 
     /* Styling for the text container */
@@ -50,8 +57,12 @@
     }
 
     @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .pulse {
@@ -59,9 +70,15 @@
     }
 
     @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-        100% { transform: scale(1); }
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
     }
 
     .jump {
@@ -69,8 +86,12 @@
     }
 
     @keyframes jump {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-20px); }
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-20px);
+        }
     }
 
     .fade {
@@ -78,9 +99,15 @@
     }
 
     @keyframes fadeIn {
-        0% { opacity: 0; }
-        50% { opacity: 1; }
-        100% { opacity: 0; }
+        0% {
+            opacity: 0;
+        }
+        50% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+        }
     }
 
     /* Wild button */
@@ -103,11 +130,21 @@
     }
 
     @keyframes buttonDance {
-        0% { transform: translateY(0) rotate(0deg); }
-        25% { transform: translateY(-10px) rotate(-5deg); }
-        50% { transform: translateY(0) rotate(5deg); }
-        75% { transform: translateY(10px) rotate(-10deg); }
-        100% { transform: translateY(0) rotate(0deg); }
+        0% {
+            transform: translateY(0) rotate(0deg);
+        }
+        25% {
+            transform: translateY(-10px) rotate(-5deg);
+        }
+        50% {
+            transform: translateY(0) rotate(5deg);
+        }
+        75% {
+            transform: translateY(10px) rotate(-10deg);
+        }
+        100% {
+            transform: translateY(0) rotate(0deg);
+        }
     }
 </style>
 
