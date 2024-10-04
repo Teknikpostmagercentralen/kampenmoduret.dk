@@ -216,6 +216,12 @@ export class FirebaseConnection {
 
     }
 
+    async setGameStarted() {
+        const db = getDatabase()
+        await set(ref(db, `${FirebaseContants.GAME_ROOT}/${FirebaseContants.GAME_STARTED}`), true)
+
+    }
+
 
     async login(email: string, password: string): Promise<User> {
         try {

@@ -12,13 +12,18 @@
 	let error: string | null = null;
 
 
-
 	if (browser) {
 		FirebaseConnection.getInstance().then(async (instance) => {
 			await instance.onUserReady(async () => {
 				const firebaseConnection = await FirebaseConnection.getInstance();
-				firebaseConnection.registerUserListener({onDataChanged:(userUpdate)=>{
-						if(userUpdate.firebaseUserID) goto("/game")
+				firebaseConnection.registerUserListener({onDataChanged:async (userUpdate) => {
+						const isAdmin = await firebaseConnection.isAdmin()
+						if (isAdmin) {
+							await goto("/admin")
+						} else {
+							await goto('/game');
+
+						}
 					}});
 			});
 		});
@@ -38,13 +43,7 @@
 				};
 			});
 
-			const isAdmin = await firebaseConnection.isAdmin()
-			if(isAdmin) {
-				await goto("/admin")
-			} else {
-				await goto('/game');
 
-			}
 
 		} catch (e) {
 			if (e instanceof NotValidCredentialsError) {
