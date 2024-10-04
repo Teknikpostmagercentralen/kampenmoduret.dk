@@ -21,6 +21,7 @@ import type {Team, TeamCreationData} from '$lib/models/team';
 import type {Game} from '$lib/models/game';
 import {constants} from "../../gamecontants";
 import {updated} from "$app/stores";
+import {PUBLIC_FIREBASE_API_KEY, PUBLIC_FIREBASE_APP_ID, PUBLIC_FIREBASE_AUTHDOMAIN, PUBLIC_FIREBASE_DATABASE_URL, PUBLIC_FIREBASE_MEASUREMENT_ID, PUBLIC_FIREBASE_MESSAGING_SENDER_ID, PUBLIC_FIREBASE_PROJECT_ID, PUBLIC_FIREBASE_STORAGE_BUCKET} from "$env/static/public";
 
 export interface FirebaseDataCallback<T> {
     onDataChanged: (data: T) => void
@@ -37,17 +38,16 @@ export type FirebaseConfigProperties = {
     measurementId: string
 }
 
-console.log(import.meta.env.VITE_FIREBASE_API_KEY)
 
 const firebaseConfig: FirebaseConfigProperties = {
-    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "",
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "",
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-    authDomain: import.meta.env.VITE_FIREBASE_AUTHDOMAIN || "",
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
+    databaseURL: PUBLIC_FIREBASE_DATABASE_URL || "",
+    measurementId: PUBLIC_FIREBASE_MEASUREMENT_ID || "",
+    apiKey: PUBLIC_FIREBASE_API_KEY || "",
+    authDomain: PUBLIC_FIREBASE_AUTHDOMAIN || "",
+    projectId: PUBLIC_FIREBASE_PROJECT_ID || "",
+    storageBucket: PUBLIC_FIREBASE_STORAGE_BUCKET || "",
+    messagingSenderId: PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
+    appId: PUBLIC_FIREBASE_APP_ID || ""
 };
 
 const app = initializeApp(firebaseConfig);

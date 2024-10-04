@@ -5,13 +5,11 @@
 	import type {UserState} from '../../../stores/userstate';
 	import {userState} from '../../../stores/userstate';
 
+
 	let email: string = '';
 	let password: string = '';
 	let error: string | null = null;
 
-	console.log("LOLOLOLOLOLOLOLOLOLOLOLOL")
-	let test = import.meta.env.VITE_FIREBASE_API_KEY
-	console.log("lol" , test)
 
 	async function handleLogin() {
 		try {
