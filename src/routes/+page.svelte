@@ -1,9 +1,11 @@
 <script>
-
+    import { API_KEY } from '$env/static/private';
 
     console.log("LOLOLOLOLOLOLOLOLOLOLOLOL")
     let test = import.meta.env.VITE_FIREBASE_API_KEY
+
     console.log("lol" , test)
+    console.log("lolaltso" , API_KEY)
 
 
 </script>
