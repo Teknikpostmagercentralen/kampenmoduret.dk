@@ -207,8 +207,6 @@ export class FirebaseConnection {
         updates[`${FirebaseContants.GAME_ROOT}/${FirebaseContants.START_TIMESTAMP}`] = serverTimestamp()
 
         await update(ref(db), updates)
-
-
     }
 
     async stopGame() {
@@ -461,6 +459,14 @@ export class FirebaseConnection {
         const isdead = snapshot.exists()
         console.log(isdead)
         return Promise.resolve(isdead)
+    }
+
+    isLoggedIn(): boolean {
+        const auth = getAuth(app);
+        const currentUser = auth.currentUser;
+
+        // Check if the user is authenticated
+        return currentUser !== null
     }
 
     async resetAllTeams(): Promise<void> {

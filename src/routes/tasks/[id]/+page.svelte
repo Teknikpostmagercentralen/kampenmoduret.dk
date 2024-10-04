@@ -10,9 +10,11 @@
     let errormessage: string;
     let taskSolved: Task;
 
-    /** Fixme move to all the pages */
+
     if (browser) {
         FirebaseConnection.getInstance().then((instance) => {
+            if (!instance.isLoggedIn()) goto("/user/login")
+
             instance.onUserReady(() => {
                 instance.writeTaskCompleted(data.taskID).then((task: Task) => {
                     // No error, navigate immediately
