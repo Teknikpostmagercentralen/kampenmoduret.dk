@@ -20,7 +20,6 @@
                 await instance.onUserReady(async () => {
                     await getUser();
                     const admin = await instance.isAdmin();
-                    console.log(admin)
                     if (!admin) {
                         await goto("/game");
                     }

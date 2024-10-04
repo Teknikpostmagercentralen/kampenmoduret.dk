@@ -7,7 +7,8 @@ export interface Team {
     bonusTime: number,
     participants: number,
     lastCompletedTask? : TaskMarker,
-    completedTasks?: TaskDictionary
+    completedTasks?: TaskDictionary,
+    deathTimestamp? : number
 }
 
 export interface TaskDictionary {
@@ -15,7 +16,8 @@ export interface TaskDictionary {
 }
 
 export interface TeamWithTime extends Team {
-    secondsleft: number
+    secondsLeft: number,
+    allSecondsEarned: number
 }
 
 

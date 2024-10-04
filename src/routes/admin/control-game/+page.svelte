@@ -7,6 +7,16 @@
             on:click={async () => {
                   await FirebaseConnection.getInstance().then(async (instance)=>{
                     await instance.startGame()
+
+        });
+		}}>Set new start timestamp (no reset)
+    </button>
+    <button
+            on:click={async () => {
+                  await FirebaseConnection.getInstance().then(async (instance)=>{
+                   await instance.resetAllTeams()
+                   await instance.startGame()
+
         });
 		}}>START game
     </button>
@@ -16,13 +26,5 @@
                     await instance.stopGame()
         });
 		}}>STOP game
-    </button>
-    <button
-            on:click={async () => {
-                      await FirebaseConnection.getInstance().then(async (instance)=>{
-                      //await instance.stopGame()
-                      await instance.resetAllTeams()
-        });
-		}}>RESET game
     </button>
 </main>

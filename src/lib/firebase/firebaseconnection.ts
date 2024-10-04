@@ -149,9 +149,8 @@ export class FirebaseConnection {
     registerTeamsListener(callback: FirebaseDataCallback<Team[]>) {
         const db = getDatabase();
         const teamsRef = ref(db, FirebaseContants.TEAMS_ROOT);
-        console.log("REgistering listener for teams")
+        console.log("Registering listener for teams")
         const unsubscribe = onValue(teamsRef, (snapshot) => {
-            console.log(snapshot.val())
             callback.onDataChanged(snapshot.val());
         });
         this.unsubscribeMethodsFromListeners.push(unsubscribe);

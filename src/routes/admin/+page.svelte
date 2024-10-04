@@ -32,6 +32,14 @@
 </script>
 
 <main>
+
+	<button
+			on:click={() => {
+			goto('/admin/scoreboard');
+		}}>See Scoreboard</button
+	>
+
+
 	<button
 		on:click={() => {
 			goto('/admin/create-task');
@@ -59,7 +67,7 @@
 	>
 	<button
 		on:click={() => {
-			goto('/admin/start');
+			goto('/admin/control-game');
 		}}>Control game</button
 	>
 	<button
