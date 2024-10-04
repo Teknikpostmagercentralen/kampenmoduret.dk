@@ -3,8 +3,8 @@
 
     import {PUBLIC_FIREBASE_API_KEY, PUBLIC_FIREBASE_DATABASE_URL} from '$env/static/public';
 
-    console.log("lol", PUBLIC_FIREBASE_DATABASE_URL)
-    console.log("lol2", PUBLIC_FIREBASE_API_KEY)
+    console.log("lol ", PUBLIC_FIREBASE_DATABASE_URL)
+    console.log("lol2 ", PUBLIC_FIREBASE_API_KEY)
 
 </script>
 <style>

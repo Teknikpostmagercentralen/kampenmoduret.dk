@@ -5,7 +5,7 @@ import type {UserCredential} from "firebase/auth";
 import {PUBLIC_FIREBASE_API_KEY, PUBLIC_FIREBASE_APP_ID, PUBLIC_FIREBASE_AUTHDOMAIN, PUBLIC_FIREBASE_DATABASE_URL, PUBLIC_FIREBASE_MEASUREMENT_ID, PUBLIC_FIREBASE_MESSAGING_SENDER_ID, PUBLIC_FIREBASE_PROJECT_ID, PUBLIC_FIREBASE_STORAGE_BUCKET} from "$env/static/public";
 
 
-const firebaseConfig: FirebaseConfigProperties = {
+/*const firebaseConfig: FirebaseConfigProperties = {
     databaseURL: PUBLIC_FIREBASE_DATABASE_URL || "",
     measurementId: PUBLIC_FIREBASE_MEASUREMENT_ID || "",
     apiKey: PUBLIC_FIREBASE_API_KEY || "",
@@ -14,7 +14,19 @@ const firebaseConfig: FirebaseConfigProperties = {
     storageBucket: PUBLIC_FIREBASE_STORAGE_BUCKET || "",
     messagingSenderId: PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
     appId: PUBLIC_FIREBASE_APP_ID || ""
+};*/
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBp6w5HC94OVbJvFLAV4aT28PtHO3NO5JA",
+    authDomain: "kampen-mod-tiden.firebaseapp.com",
+    databaseURL: "https://kampen-mod-tiden-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "kampen-mod-tiden",
+    storageBucket: "kampen-mod-tiden.appspot.com",
+    messagingSenderId: "719178463301",
+    appId: "1:719178463301:web:f7b89a188aacce35110b2c",
+    measurementId: "G-ZKE0FSGP3Y"
 };
+
 
 type UserAddedCallback = (userCredential: UserCredential)=> void
 
