@@ -325,9 +325,9 @@ export class FirebaseConnection {
             throw new AuthenticationError("User is not authenticated. Please log in.");
         }
 
-        if(await this.isTeamDead(currentUser.uid)) {
-            throw new TeamIsDeadError("You cannot complete more tasks because you have run out of time")
-        }
+        // if(await this.isTeamDead(currentUser.uid)) {
+        //     throw new TeamIsDeadError("You cannot complete more tasks because you have run out of time")
+        // }
 
         const db = getDatabase(app);
         const snapshot = await get(ref(db, `${FirebaseContants.TASKS_ROOT}/${taskID}`))

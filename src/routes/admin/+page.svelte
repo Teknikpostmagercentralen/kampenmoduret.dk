@@ -83,7 +83,7 @@
             const timeleft = await getTimeLeft(team, gameDataFromFirebase)
             if (timeleft === 0) {
                 await FirebaseConnection.getInstance().then(async (instance) => {
-                    if (!await instance.isTeamDead(key)) await instance.setTeamDead(key) //only do this once
+                    // if (!await instance.isTeamDead(key)) await instance.setTeamDead(key) //only do this once
                 })
             }
             const teamWithTime: TeamWithTime = {

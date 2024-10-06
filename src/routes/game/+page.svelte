@@ -55,7 +55,7 @@
 			if(timeLeft !== undefined && timeLeft <= 0) { //He's Dead, Jim
 				console.log("You dead jim")
 				await FirebaseConnection.getInstance().then(async (instance) => {
-					if(await !instance.isTeamDead(user.firebaseUserID)) await instance.setTeamDead(user.firebaseUserID)
+					// if(await !instance.isTeamDead(user.firebaseUserID)) await instance.setTeamDead(user.firebaseUserID)
 				})
 			} else {
 				updateTimeLeft();
