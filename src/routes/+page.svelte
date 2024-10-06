@@ -60,7 +60,7 @@
 
     /* Animated text styles */
     h1 {
-        font-size: 5rem;
+        font-size: 4rem;
         font-weight: bold;
         color: white;
         display: inline-block;
