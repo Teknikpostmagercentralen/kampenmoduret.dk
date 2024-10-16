@@ -359,19 +359,22 @@ export class FirebaseConnection {
 
         const pathToCompletedTaskInTasks = `${teamDatabaseBasePath}/${FirebaseContants.TEAM_TASKS}/${taskID}`
         const snapshotOfTask = await get(ref(db, pathToCompletedTaskInTasks))
-        if (snapshotOfTask.exists()) {
-            console.error("The team has already solved this task")
-            throw new AlreadySolvedTaskError("You have already solved this task")
-        }
+
+        //FIXME: Changed for SKS E24, reintroduce code afterwards
+        // if (snapshotOfTask.exists()) {
+        //     console.error("The team has already solved this task")
+        //     throw new AlreadySolvedTaskError("You have already solved this task")
+        // }
 
         const lastCompletedTaskPath = `${teamDatabaseBasePath}/${FirebaseContants.LAST_COMPLETED_TASK}`
 
         const lastTaskSnapsHot = await get(ref(db, lastCompletedTaskPath))
         const lastTask: TaskMarker = lastTaskSnapsHot.val()
 
-     if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
-            throw new TwoOfTheSameLetterTaskInARowError("Your last tasks was this same letter")
-        }
+        //FIXME: Changed for SKS E24, reintroduce code afterwards
+     // if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
+     //        throw new TwoOfTheSameLetterTaskInARowError("Your last tasks was this same letter")
+     //    }
 
         const updates: { [key: string]: any } = {}
 

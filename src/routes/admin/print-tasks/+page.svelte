@@ -15,6 +15,7 @@
 		});
 	}
 
+	//fixme: if we at some point want to not use an external API we could also use @svelte-put/qr for this. It seems nice!
 	function generateQrUrl(key: string, task: Task): string {
 		const taskUrl = `https://kampenmoduret.dk/tasks/${key}`;
         console.log(taskUrl);
