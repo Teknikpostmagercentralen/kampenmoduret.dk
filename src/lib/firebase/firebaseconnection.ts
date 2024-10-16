@@ -23,6 +23,7 @@ import {constants} from "../../gamecontants";
 import {updated} from "$app/stores";
 import {PUBLIC_FIREBASE_API_KEY, PUBLIC_FIREBASE_APP_ID, PUBLIC_FIREBASE_AUTHDOMAIN, PUBLIC_FIREBASE_DATABASE_URL, PUBLIC_FIREBASE_MEASUREMENT_ID, PUBLIC_FIREBASE_MESSAGING_SENDER_ID, PUBLIC_FIREBASE_PROJECT_ID, PUBLIC_FIREBASE_STORAGE_BUCKET} from "$env/static/public";
 import {userState} from "../../stores/userstate";
+import { v4 as uuidv4 } from 'uuid';
 
 export interface FirebaseDataCallback<T> {
     onDataChanged: (data: T) => void
@@ -357,10 +358,18 @@ export class FirebaseConnection {
 
         const teamDatabaseBasePath = `${FirebaseContants.TEAMS_ROOT}/${teamId}`
 
-        const pathToCompletedTaskInTasks = `${teamDatabaseBasePath}/${FirebaseContants.TEAM_TASKS}/${taskID}`
+
+
+        //fixme new code from SKS E24, remove this code afterwards
+        const randomId = uuidv4();
+        const pathToCompletedTaskInTasks = `${teamDatabaseBasePath}/${FirebaseContants.TEAM_TASKS}/${randomId}`
+        
+
+        //fixme code before SKS E24, reintroduce this code afterwards
+        //const pathToCompletedTaskInTasks = `${teamDatabaseBasePath}/${FirebaseContants.TEAM_TASKS}/${taskID}`
         const snapshotOfTask = await get(ref(db, pathToCompletedTaskInTasks))
 
-        //FIXME: Changed for SKS E24, reintroduce code afterwards
+        //FIXME: Changed for SKS E24, reintroduce this code afterwards
         // if (snapshotOfTask.exists()) {
         //     console.error("The team has already solved this task")
         //     throw new AlreadySolvedTaskError("You have already solved this task")
