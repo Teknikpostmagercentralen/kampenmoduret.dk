@@ -5,20 +5,14 @@
     import {FirebaseConnection} from "../../lib/firebase/firebaseconnection";
     import type {User} from "../../lib/models/user";
 
-    let user: User;
-
-    async function getUser() {
-        const firebaseConnection = await FirebaseConnection.getInstance();
-        firebaseConnection.registerUserListener({onDataChanged:(userUpdate)=>{
-                user = userUpdate;
-            }});
-    }
+/*
+    Responsable for redirecting to /game if user is not admin
+*/
 
     onMount(async () => {
         if (browser) {
             FirebaseConnection.getInstance().then(async (instance) => {
                 await instance.onUserReady(async () => {
-                    await getUser();
                     const admin = await instance.isAdmin();
                     if (!admin) {
                         await goto("/game");

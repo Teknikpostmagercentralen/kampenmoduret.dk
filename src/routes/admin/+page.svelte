@@ -9,33 +9,31 @@
     import {getTimeLeft} from '$lib/game/gameLogic';
     import {sumCollectedTime} from "$lib/game/gameLogic";
 
-    let teamsShownInTable: TeamWithTime[] // the public data in the table, so we can control when its updated. ANd its not jsut updated while calculating new valuesd
-    let gameDataFromFirebase: Game; //global data that ias the last raw data received from firebase, in global field becasse ease and lazyness
-    let teamDataFromFirebase: Team[] //global data that ias the last raw data received from firebase, in global field becasse ease and lazyness
+    let teamsShownInTable: TeamWithTime[] // the public data in the table, so we can control when its updated. And its not just updated while calculating new values
+    let gameDataFromFirebase: Game; // global data that is the last raw data received from firebase, in global field becasse ease and lazyness
+    let teamDataFromFirebase: Team[] //global data that is the last raw data received from firebase, in global field becasse ease and lazyness
     let timeout: NodeJS.Timeout;
 
     let user: User;
     let displayName: string;
 
-
-    let inputFieldValue: number
-    // Simulate getting the prefilled value from a script
+    let gameMultiplierInputFieldValue: number
+    // Get current multiplier value and update input field on page load
     onMount(async () => {
-        // This could be a call to an API or any other async data retrieval method
-        inputFieldValue = await FirebaseConnection.getInstance().then((instance) => {
+        gameMultiplierInputFieldValue = await FirebaseConnection.getInstance().then((instance) => {
             return instance.getGameMultiplier()
 
         })
     });
 
-    // Function to handle saving the new value
+    // Function to handle saving new multiplier value
     async function saveNewValue() {
         await FirebaseConnection.getInstance().then(async (instance) => {
-            await instance.setMultiplierValue(inputFieldValue)
+            await instance.setMultiplierValue(gameMultiplierInputFieldValue)
         })
-        // Call your API or function to save the new value here
     }
 
+    // TODO: Resume refactor here
     async function getUser() {
         const firebaseConnection = await FirebaseConnection.getInstance();
         firebaseConnection.registerUserListener({
@@ -77,7 +75,7 @@
      * handle update if new data is avaiæable. also is alled in an interval when we aant to update data in the table
      */
     async function updateTableData() {
-        if (!teamDataFromFirebase && !gameDataFromFirebase) return
+        if (!teamDataFromFirebase || !gameDataFromFirebase) return
         let teamsWithTime: TeamWithTime[] = []
         for (const [key, team] of Object.entries(teamDataFromFirebase)) {
             const timeleft = await getTimeLeft(team, gameDataFromFirebase)
@@ -268,7 +266,7 @@
                     <input
                             class="input"
                             type="number"
-                            bind:value={inputFieldValue}
+                            bind:value={gameMultiplierInputFieldValue}
                             placeholder="Enter new value"
                     />
                 </div>

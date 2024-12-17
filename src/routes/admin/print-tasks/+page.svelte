@@ -10,14 +10,12 @@
 		FirebaseConnection.getInstance().then((instance) => {
 			instance.onUserReady(async () => {
 				tasks = await instance.getTasks();
-				console.log(tasks);
 			});
 		});
 	}
 
 	function generateQrUrl(key: string, task: Task): string {
 		const taskUrl = `https://kampenmoduret.dk/tasks/${key}`;
-        console.log(taskUrl);
 		const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(taskUrl)}`;
 		return qrUrl;
 	}
