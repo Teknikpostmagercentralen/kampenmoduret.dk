@@ -8,11 +8,17 @@
     import type {Game} from '$lib/models/game';
     import {getTimeLeft} from '$lib/game/gameLogic';
     import {sumCollectedTime} from "$lib/game/gameLogic";
+    import {get, writable} from "svelte/store";
 
-    let teamsShownInTable: TeamWithTime[] // the public data in the table, so we can control when its updated. And its not just updated while calculating new values
-    let gameDataFromFirebase: Game; // global data that is the last raw data received from firebase, in global field becasse ease and lazyness
-    let teamDataFromFirebase: Team[] //global data that is the last raw data received from firebase, in global field becasse ease and lazyness
+    const teamsShownInTable = writable<TeamWithTime[]>([]);// the public data in the table, so we can control when its updated. And its not just updated while calculating new values
     let timeout: NodeJS.Timeout;
+    let rawTeamData = writable<Record<string, Team>>({});
+
+    const rawGameData = writable<Game>({
+        gameLengthInSeconds: 0,   // Default to 0 or another placeholder value
+        multiplier: 1,            // Default multiplier
+        started: false           // Assume the game hasn't started
+    });
 
     let user: User;
     let displayName: string;
@@ -33,7 +39,6 @@
         })
     }
 
-    // TODO: Resume refactor here
     async function getUser() {
         const firebaseConnection = await FirebaseConnection.getInstance();
         firebaseConnection.registerUserListener({
@@ -72,15 +77,23 @@
     });
 
     /**
-     * handle update if new data is avaiæable. also is alled in an interval when we aant to update data in the table
+     * At an interval we recalculate and update the time (NB this is called at an interval to make countdown work)
      */
-    async function updateTableData() {
-        if (!teamDataFromFirebase || !gameDataFromFirebase) return
-        let teamsWithTime: TeamWithTime[] = []
-        for (const [key, team] of Object.entries(teamDataFromFirebase)) {
-            const timeleft = await getTimeLeft(team, gameDataFromFirebase)
+    async function recalculateTableTime() {
+        const teams = get(rawTeamData); // Get the raw team data as a Record<string, Team>
+        const gameData = get(rawGameData); // Get the game data
+
+        if (!teams || Object.keys(teams).length === 0 || !gameData || gameData.gameLengthInSeconds === 0) {
+            console.log("Teams or game data is missing or invalid.");
+            return;
+        }
+
+        let temporaryTeamsWithTime: TeamWithTime[] = []
+        for (const [key, team] of Object.entries(teams)) {
+            const timeleft = await getTimeLeft(team, gameData)
             if (timeleft === 0) {
                 await FirebaseConnection.getInstance().then(async (instance) => {
+                    //TODO WAS THE BUG HERE?
                     // if (!await instance.isTeamDead(key)) await instance.setTeamDead(key) //only do this once
                 })
             }
@@ -89,40 +102,97 @@
                 secondsLeft: timeleft,
                 allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime
             }
-            teamsWithTime.push(teamWithTime)
+            temporaryTeamsWithTime.push(teamWithTime)
         }
 
-        //Sort the thing to mak the game sorted
-        //fixme; this is VERY inneficient and c an be done in many more more clever ways. But are lazy and IT will have to due for now
-        teamsWithTime.sort((a, b) => b.allSecondsEarned - a.allSecondsEarned);
-
-        teamsShownInTable = teamsWithTime
+        teamsShownInTable.set(temporaryTeamsWithTime)
     }
+
+    // function sortTable() {
+    //     teamsShownInTable.update((teams) => {
+    //         if (!teams || teams.length === 0) {
+    //             console.log("teamsShownInTable is empty.");
+    //             return teams; // No changes if empty
+    //         }
+    //
+    //         // Sort the teams by `allSecondsEarned` in descending order
+    //         const sortedTeams = [...teams].sort((a, b) => b.allSecondsEarned - a.allSecondsEarned);
+    //         console.log("Sorted teams:", sortedTeams);
+    //         return sortedTeams;
+    //     });
+    // }
 
     if (browser) {
         FirebaseConnection.getInstance().then(async (instance) => {
             instance.registerTeamsListener({
                 onDataChanged: async (teamsUpdate) => {
-                    teamDataFromFirebase = teamsUpdate
-                    await updateTableData(); //trigger update on new team data if there is both game and teams already
-
+                    rawTeamData.set(teamsUpdate)
+                    // Process and update the table data
+                    updateAndSortTableData()
                 }
             });
+
             instance.registerGameListener({
                 onDataChanged: async (gameUpdate) => {
-                    gameDataFromFirebase = gameUpdate;
-                    await updateTableData(); //trigger update on new game data if there is both game and teams already
+                    rawGameData.set(gameUpdate)
+                    updateAndSortTableData()
                 }
             });
         });
-        updateTimeLeft()
+        updateTimeLeft() // start the timer
+    }
+
+    function sortTeams(teams: Team[], gameData: Game): TeamWithTime[] {
+        return teams
+            .map((team) => ({
+                ...team,
+                secondsLeft: getTimeLeft(team, gameData), // Calculate time left
+                allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime, // Calculate total earned time
+            }))
+            .sort((a, b) => b.allSecondsEarned - a.allSecondsEarned); // Sort by allSecondsEarned
+    }
+
+    async function updateAndSortTableData() {
+        rawTeamData.subscribe(async (teams) => {
+            if (typeof teams !== 'object' || !teams || Object.keys(teams).length === 0) {
+                console.log("Teams data is missing or empty.");
+                return;
+            }
+
+            rawGameData.subscribe(async (gameData: Game) => {
+                if (gameData.gameLengthInSeconds === 0) {
+                    console.log("Game data is missing or invalid.");
+                    return;
+                }
+
+                const teamArray = Object.values(teams);
+
+                // Use Promise.all to wait for all async operations
+                const processedTeams = await Promise.all(
+                    teamArray.map(async (team) => {
+                        const timeleft = await getTimeLeft(team, gameData);
+                        return {
+                            ...team,
+                            secondsLeft: timeleft,
+                            allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime,
+                        };
+                    })
+                );
+
+                // Sort the processed teams
+                processedTeams.sort((a, b) => b.allSecondsEarned - a.allSecondsEarned);
+
+                // Update the writable store
+                teamsShownInTable.set(processedTeams);
+            });
+        });
     }
 
     function updateTimeLeft() {
         timeout = setTimeout(async () => {
-            await updateTableData()
+            await recalculateTableTime()
             updateTimeLeft();
-        }, 1000);
+        }, 1000)
     }
 
     function addZero(input: number): string {
@@ -226,7 +296,7 @@
         <div class="box">
             <h2 class="subtitle has-text-grey">Team score overall</h2>
 
-            {#if teamsShownInTable}
+            {#if $teamsShownInTable}
                 <div class="table-container">
                     <table class="table is-striped is-hoverable is-fullwidth">
                         <thead>
@@ -239,7 +309,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        {#each teamsShownInTable as team}
+                        {#each $teamsShownInTable as team}
                             <tr class:has-text-danger={team.deathTimestamp}>
                                 <td>{team.username}</td>
                                 <td>{formatTime(team.secondsLeft)}</td>

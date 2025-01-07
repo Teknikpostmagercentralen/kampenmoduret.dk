@@ -389,12 +389,13 @@ export class FirebaseConnection {
     }
 
 
-    killAllListenersFromThisPage() {
+    async killAllListenersFromThisPage() {
         for (const unsubscribe of this.unsubscribeMethodsFromListeners) {
             unsubscribe();
         }
-        this.teamUnsubscribeMethod;
-        this.gameUnsubscribeMethod;
+
+        this.teamUnsubscribeMethod?.();
+        this.gameUnsubscribeMethod?.();
         this.unsubscribeMethodsFromListeners = [];
     }
 
@@ -483,7 +484,6 @@ export class FirebaseConnection {
     }
 
     async resetAllTeams(): Promise<void> {
-        console.log("lol")
         const db = getDatabase();
         const snapshot = await get(ref(db, `${FirebaseContants.TEAMS_ROOT}`));
 
