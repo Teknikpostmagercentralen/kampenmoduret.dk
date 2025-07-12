@@ -51,7 +51,7 @@
     }
 
     onMount(() => {
-        console.log(`Onmount: ${PUBLIC_CURRENT_URL}`);
+        console.log(`Onmount: ${PUBLIC_CURRENT_APP_URL}`);
         console.log("HEJHEHEHJE")
     });
 
