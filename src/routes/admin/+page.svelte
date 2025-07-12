@@ -221,9 +221,9 @@
         <div class="box">
             <h2 class="subtitle has-text-grey">Game controls</h2>
             <div class="buttons">
-                <button class="button has-background-danger has-text-white"
+                <button class="button has-background-grey-dark has-text-white"
                         on:click={async () => {
-                            await confirmAction("Start the game", async () => {
+                            await confirmAction("start the game", async () => {
                                 await FirebaseConnection.getInstance().then(async (instance) => {
                                     await instance.startGame();
                                 });
@@ -233,7 +233,7 @@
                 >START game
                 </button>
 
-                <button class="button has-background-danger has-text-white"
+                <button class="button has-background-grey-dark has-text-white"
                         on:click={async () => {
                             await confirmAction("deactivate the game", async () => {
                                 await FirebaseConnection.getInstance().then(async (instance) => {
@@ -245,9 +245,9 @@
                 >Deactivate Game
                 </button>
 
-                <button class="button has-background-danger has-text-white"
+                <button class="button has-background-grey-dark has-text-white"
                         on:click={async () => {
-                            await confirmAction("Activate the game", async () => {
+                            await confirmAction("activate the game", async () => {
                                 await FirebaseConnection.getInstance().then(async (instance) => {
                                     await instance.setGameStarted();
                                 });
