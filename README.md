@@ -58,3 +58,29 @@ You can also deploy manually as a preview **without committing** using Wrangler:
 
 ```bash
 wrangler pages deploy .svelte-kit/cloudflare --project-name=kampenmoduret-dk
+```
+
+## 🌐 Branch Previews & Aliases
+
+Cloudflare Pages automatically assigns each Git branch a unique deployment URL. This feature makes it easy to preview and test any branch without merging it.
+
+### 🔁 Automatic branch-based URLs
+
+Every branch gets its own subdomain under `pages.dev`. For example:
+
+- The `main` branch is accessible at  
+  **https://main.kampenmoduret-dk.pages.dev/**
+- A branch named `feature/login` would be available at  
+  **https://feature-login.kampenmoduret-dk.pages.dev/**
+
+This allows for quick testing of feature branches in isolation.
+
+### ✨ Custom alias: `dev.kampenmoduret.dk`
+
+In addition to the default aliases, we’ve created a custom alias that always points to the `main` branch:
+
+- **https://dev.kampenmoduret.dk**
+
+This provides a consistent and memorable URL to access the latest version of the `main` branch, without relying on the default Cloudflare subdomain.
+
+You can use this for internal testing, client previews, or development access without touching the production environment.

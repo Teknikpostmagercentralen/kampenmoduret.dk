@@ -17,8 +17,8 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 # - https://developers.cloudflare.com/pages/functions/bindings/#secrets
 
 
-#[vars]
-#PUBLIC_CURRENT_APP_URL = "production_value"
+[vars]
+PUBLIC_CURRENT_APP_URL = "${CF_PAGES_URL}"
 
 # Bind the Workers AI model catalog. Run machine learning models, powered by serverless GPUs, on Cloudflare’s global network
 # Docs: https://developers.cloudflare.com/pages/functions/bindings/#workers-ai

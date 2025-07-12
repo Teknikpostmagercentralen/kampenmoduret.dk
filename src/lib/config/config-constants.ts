@@ -4,8 +4,8 @@ import {env} from '$env/dynamic/public';
 export class ConfigConstants {
     static getURL(): string {
         // Prefer CF_PAGES_URL if available (Cloudflare's environment)
-        if (env.CF_PAGES_URL) {
-            return env.CF_PAGES_URL;
+        if (env.PUBLIC_CURRENT_APP_URL) {
+            return env.PUBLIC_CURRENT_APP_URL;
         }
 
         // Fallback to PUBLIC_CURRENT_APP_URL (your custom env.example value)
