@@ -107,37 +107,6 @@
         });
     });
 
-    /**
-     * At an interval we recalculate and update the time (NB this is called at an interval to make countdown work)
-     */
-    async function recalculateTableTime() {
-        const teams = get(rawTeamData); // Get the raw team data as a Record<string, Team>
-        const gameData = get(rawGameData); // Get the game data
-
-        if (!teams || Object.keys(teams).length === 0 || !gameData) {
-            console.log("Teams or game data is missing or invalid.");
-            return;
-        }
-
-        let temporaryTeamsWithTime: TeamWithTime[] = []
-        for (const [key, team] of Object.entries(teams)) {
-            const timeleft = await getTimeLeft(team, gameData)
-            if (timeleft === 0) {
-                await FirebaseConnection.getInstance().then(async (instance) => {
-                    //TODO WAS THE BUG HERE?
-                    if (!await instance.isTeamDead(key)) await instance.setTeamDead(key) //only do this once
-                })
-            }
-            const teamWithTime: TeamWithTime = {
-                ...team,
-                secondsLeft: timeleft,
-                allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime
-            }
-            temporaryTeamsWithTime.push(teamWithTime)
-        }
-
-        teamsShownInTable.set(temporaryTeamsWithTime)
-    }
 
     export const teamsShownInTableV2 = derived(
         [rawTeamData, rawGameData, timeTicker],
@@ -181,22 +150,9 @@
             instance.registerGameListener({
                 onDataChanged: async (gameUpdate) => {
                     rawGameData.set(gameUpdate)
-                    << <<<<< HEAD
-                        console.log(gameUpdate)
-                    updateAndSortTableData()
-                    === === =
-                >>>>>>>
-                    78
-                    d1a1c(better
-                    more
-                    performant
-                    team
-                    tabel
-                    with sorting)
-                        }
+                }
             });
         });
-        updateTimeLeft() // start the timer
     }
 
     function sortTeams(teams: Team[], gameData: Game): TeamWithTime[] {
@@ -209,44 +165,6 @@
             .sort((a, b) => b.allSecondsEarned - a.allSecondsEarned); // Sort by allSecondsEarned
     }
 
-    async function updateAndSortTableData() {
-        rawTeamData.subscribe(async (teams) => {
-            if (typeof teams !== 'object' || !teams || Object.keys(teams).length === 0) {
-                console.log("Teams data is missing or empty.");
-                return;
-            }
-
-            rawGameData.subscribe(async (gameData: Game) => {
-
-                const teamArray = Object.values(teams);
-
-                // Use Promise.all to wait for all async operations
-                const processedTeams = await Promise.all(
-                    teamArray.map(async (team) => {
-                        const timeleft = await getTimeLeft(team, gameData);
-                        return {
-                            ...team,
-                            secondsLeft: timeleft,
-                            allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime,
-                        };
-                    })
-                );
-
-                // Sort the processed teams
-                processedTeams.sort((a, b) => b.allSecondsEarned - a.allSecondsEarned);
-
-                // Update the writable store
-                teamsShownInTable.set(processedTeams);
-            });
-        });
-    }
-
-    function updateTimeLeft() {
-        timeout = setTimeout(async () => {
-            await recalculateTableTime()
-            updateTimeLeft();
-        }, 1000)
-    }
 
     function addZero(input: number): string {
         if (input < 10) {
@@ -357,7 +275,6 @@
 
 
             <div class="table-container">
-                <h3 class="has-text-grey">V2 – ny derived-tabel</h3>
                 <table class="table is-striped is-hoverable is-fullwidth">
                     <thead>
                     <tr class="has-background-grey-lighter">
@@ -385,39 +302,6 @@
                     </tbody>
                 </table>
             </div>
-
-            {#if $teamsShownInTable}
-                <div class="table-container">
-                    <table class="table is-striped is-hoverable is-fullwidth">
-                        <thead>
-                        <tr class="has-background-grey-lighter">
-                            <th class="has-text-grey-dark">Name</th>
-                            <th class="has-text-grey-dark">Time Left</th>
-                            <th class="has-text-grey-dark">Seconds Earned</th>
-                            <th class="has-text-grey-dark">Nr Participants</th>
-                            <th class="has-text-grey-dark">Last Task</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {#each $teamsShownInTable as team}
-                            <tr class:has-text-danger={team.deathTimestamp}>
-                                <td>{team.username}</td>
-                                <td>{formatTime(team.secondsLeft)}</td>
-                                <td>{team.allSecondsEarned}</td>
-                                <td>{team.participants}</td>
-                                {#if team.lastCompletedTask}
-                                    <td>{team.lastCompletedTask.letter} {team.lastCompletedTask.number}</td>
-                                {:else}
-                                    <td>No completed task</td>
-                                {/if}
-                            </tr>
-                        {/each}
-                        </tbody>
-                    </table>
-                </div>
-            {/if}
-        </div>
-
         <div class="box">
             <h2 class="subtitle has-text-grey">Edit the Value</h2>
             <div class="field">
