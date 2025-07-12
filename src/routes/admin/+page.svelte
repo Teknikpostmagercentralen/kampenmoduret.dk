@@ -59,7 +59,6 @@
         gameMultiplierInputFieldValue = await FirebaseConnection.getInstance().then((instance) => {
             return instance.getGameMultiplier()
         })
-        startUpdateTeamsLoop(); // start the timer to update teams
     });
 
     // Function to handle saving new multiplier value
@@ -78,36 +77,26 @@
         });
     }
 
-
-    if (browser) {
-        FirebaseConnection.getInstance().then(async (instance) => {
-            await instance.onUserReady(async () => {
-                await getUser();
-            });
-        });
-    }
-
     onDestroy(async () => {
+
         await FirebaseConnection.getInstance().then((instance) => {
             instance.killAllListenersFromThisPage();
         });
     });
-
     FirebaseConnection.getInstance().then(async (instance) => {
+
         instance.onUserReady(async () => (
             displayName = await instance.getAdminDisplayName()
         ))
     })
-
-
     onDestroy(async () => {
+
+
         clearTimeout(timeout);
         await FirebaseConnection.getInstance().then((instance) => {
             instance.killAllListenersFromThisPage();
         });
     });
-
-
     export const teamsShownInTableV2 = derived(
         [rawTeamData, rawGameData, timeTicker],
         ([teams, gameData], set) => {
@@ -137,8 +126,15 @@
             })();
         }
     );
-
+    
     if (browser) {
+
+        FirebaseConnection.getInstance().then(async (instance) => {
+            await instance.onUserReady(async () => {
+                await getUser();
+            });
+        });
+
         FirebaseConnection.getInstance().then(async (instance) => {
             instance.registerTeamsListener({
                 onDataChanged: async (teamsUpdate) => {
@@ -152,6 +148,7 @@
                     rawGameData.set(gameUpdate)
                 }
             });
+            startUpdateTeamsLoop(); // start the timer to update teams
         });
     }
 
