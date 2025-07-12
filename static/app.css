@@ -1,0 +1,3 @@
+button.button.is-dark:disabled {
+    opacity: 0.15; /* default is 0.5, make it lighter */
+}
