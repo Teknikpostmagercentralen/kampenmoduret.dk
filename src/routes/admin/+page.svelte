@@ -171,16 +171,21 @@
         <div class="box">
             <h2 class="subtitle has-text-grey">General controls</h2>
             <div class="buttons">
-                <button class="button has-background-grey-dark has-text-white"
+                <button class="button is-link"
                         on:click={() => {
 				            goto('/admin/create-task');
 			            }}>Create new task
                 </button>
 
-                <button class="button has-background-grey-dark has-text-white"
+                <button class="button is-link"
                         on:click={() => {
 				            goto('/admin/register-team');
 			            }}>Add team
+                </button>
+                <button class="button is-link"
+                        on:click={() => {
+				            goto('/admin/print-tasks');
+			            }}>Print tasks
                 </button>
             </div>
         </div>
@@ -188,7 +193,7 @@
         <div class="box">
             <h2 class="subtitle has-text-grey">Game controls</h2>
             <div class="buttons">
-                <button class="button has-background-grey-dark has-text-white"
+                <button class="button is-dark"
                         on:click={async () => {
                             await confirmAction("start the game", async () => {
                                 await FirebaseConnection.getInstance().then(async (instance) => {
@@ -200,7 +205,7 @@
                 >START game
                 </button>
 
-                <button class="button has-background-grey-dark has-text-white"
+                <button class="button is-dark"
                         on:click={async () => {
                             await confirmAction("deactivate the game", async () => {
                                 await FirebaseConnection.getInstance().then(async (instance) => {
@@ -208,11 +213,11 @@
                                 });
                             });
 			            }}
-                        disabled='{$rawGameData.gameState === GameState.DEACTIVATED}'
+                        disabled='{$rawGameData.gameState === GameState.DEACTIVATED || $rawGameData.gameState === GameState.STOPPED}'
                 >Deactivate Game
                 </button>
 
-                <button class="button has-background-grey-dark has-text-white"
+                <button class="button is-dark"
                         on:click={async () => {
                             await confirmAction("activate the game", async () => {
                                 await FirebaseConnection.getInstance().then(async (instance) => {
@@ -220,11 +225,23 @@
                                 });
                             });
 			            }}
-                        disabled='{$rawGameData.gameState === GameState.STARTED}'
+                        disabled='{$rawGameData.gameState === GameState.STARTED || $rawGameData.gameState === GameState.STOPPED}'
                 >Activate Game
                 </button>
 
-                <button class="button has-background-danger has-text-white"
+                <button class="button is-dark"
+                        on:click={async () => {
+                            await confirmAction("stop the game", async () => {
+                                await FirebaseConnection.getInstance().then(async (instance) => {
+                                    await instance.stopGame();
+                                });
+                            });
+			            }}
+                        disabled='{$rawGameData.gameState === GameState.STOPPED}'
+                >Stop Game
+                </button>
+
+                <button class="button is-danger"
                         on:click={async () => {
                             await confirmAction("DELETE all data and RESET game", async () => {
                                 await FirebaseConnection.getInstance().then(async (instance) => {
