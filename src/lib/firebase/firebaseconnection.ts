@@ -61,7 +61,6 @@ const firebaseConfig = {
     measurementId: "G-ZKE0FSGP3Y"
 };
 
-
 const app = initializeApp(firebaseConfig);
 
 export class NotValidCredentialsError extends Error {
@@ -465,7 +464,6 @@ export class FirebaseConnection {
         const db = getDatabase()
         const snapshot = await get(ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.DEATH_TIMESTAMP}`))
         const isdead = snapshot.exists()
-        console.log(isdead)
         return Promise.resolve(isdead)
     }
 

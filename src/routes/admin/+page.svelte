@@ -9,6 +9,8 @@
     import {getTimeLeft} from '$lib/game/gameLogic';
     import {sumCollectedTime} from "$lib/game/gameLogic";
     import {get, writable} from "svelte/store";
+    import { afterNavigate } from '$app/navigation';
+
 
     const teamsShownInTable = writable<TeamWithTime[]>([]);// the public data in the table, so we can control when its updated. And its not just updated while calculating new values
     let timeout: NodeJS.Timeout;
@@ -47,6 +49,18 @@
             }
         });
     }
+
+    onMount(() => {
+        console.log("Onmount: HEJ.");
+    });
+
+
+    afterNavigate(() => {
+        console.log('Navigated to new page hej');
+    });
+
+
+
 
     if (browser) {
         FirebaseConnection.getInstance().then(async (instance) => {
