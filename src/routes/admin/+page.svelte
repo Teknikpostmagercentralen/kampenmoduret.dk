@@ -97,7 +97,7 @@
             if (timeleft === 0) {
                 await FirebaseConnection.getInstance().then(async (instance) => {
                     //TODO WAS THE BUG HERE?
-                    // if (!await instance.isTeamDead(key)) await instance.setTeamDead(key) //only do this once
+                    if (!await instance.isTeamDead(key)) await instance.setTeamDead(key) //only do this once
                 })
             }
             const teamWithTime: TeamWithTime = {
