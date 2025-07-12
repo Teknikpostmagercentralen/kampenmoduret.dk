@@ -10,7 +10,7 @@
     import {sumCollectedTime} from "$lib/game/gameLogic";
     import {get, writable} from "svelte/store";
     import { afterNavigate } from '$app/navigation';
-
+    import {PUBLIC_CURRENT_URL} from '$env/static/public';
 
     const teamsShownInTable = writable<TeamWithTime[]>([]);// the public data in the table, so we can control when its updated. And its not just updated while calculating new values
     let timeout: NodeJS.Timeout;
@@ -51,7 +51,8 @@
     }
 
     onMount(() => {
-        console.log("Onmount: HEJ.");
+        console.log(`Onmount: ${PUBLIC_CURRENT_URL}`);
+        console.log("HEJHEHEHJE")
     });
 
 
