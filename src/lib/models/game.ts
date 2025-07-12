@@ -1,6 +1,8 @@
+import {GameState} from "./game-state";
+
 export interface Game {
     gameLengthInSeconds: number,
     multiplier: number,
-    started?: boolean,
     startTimestamp?: number
+    gameState?: GameState;
 }

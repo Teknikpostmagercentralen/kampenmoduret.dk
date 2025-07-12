@@ -7,6 +7,7 @@
 	import type { Game } from '$lib/models/game';
 	import type { User } from '../../lib/models/user';
 	import {goto} from "$app/navigation";
+	import {GameState} from "$lib/models/game-state.js";
 
 	let user: User;
 	let timeLeft: number; // Set the starting time
@@ -31,6 +32,7 @@
 				firebaseConnection.registerGameListener({
 					onDataChanged: async (gameUpdate) => {
 						game = gameUpdate;
+						console.log(gameUpdate)
 						if (team && game) {
 							timeLeft = await getTimeLeft(team, game);
 						}
@@ -85,7 +87,7 @@
 </script>
 
 <main>
-	{#if timeLeft !== undefined && game && game.started}
+	{#if timeLeft !== undefined && game && game.gameState === GameState.STARTED}
 		<div
 			class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center ${timeLeft === 0 ? 'has-background-danger' : 'has-background-success'}`}
 		>
@@ -105,8 +107,8 @@
 		<div
 			class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center has-background-warning`}
 		>
-			{#if game && !game.started}
-				<p class="title is-4">Waiting for game to start</p>
+			{#if game && game.gameState !== GameState.DEACTIVATED}
+				<p class="title is-4">Waiting for game to start {game.gameState}</p>
 			{:else}
 				<p class="title is-4">Loading</p>
 			{/if}

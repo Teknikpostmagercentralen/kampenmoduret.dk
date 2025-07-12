@@ -1,14 +1,25 @@
-export class FirebaseContants {
+export class FirebaseConstants {
     static TASKS_ROOT = "tasks"
     static TEAMS_ROOT = "teams"
     static TEAM_TASKS = "completedTasks"
     static GAME_ROOT = "games/LCC_GAME"
     static LAST_COMPLETED_TASK = "lastCompletedTask"
-    static GAME_STARTED: string = "started";
     static ADMIN_ROOT = "admins"
     static MULTIPLIER: string = "multiplier";
     static START_TIMESTAMP: string = "startTimestamp";
     static DEATH_TIMESTAMP: string = "deathTimestamp";
     static DISPLAY_NAME: string = "displayName";
+
+    static GAME_STATE: string = "gameState";
+
+    static GAME_STATE_WELCOME: string = "pre_game_welcome"; //velkommen til vi starter om lidt
+    static GAME_STATE_DEACTIVATED: string = "game_deactivated";
+    static GAME_STATE_STOPPED: string = "game_stopped";
+    static GAME_STATE_STARTED: string = "game_started";
+
+
+
+
+
 }
 
