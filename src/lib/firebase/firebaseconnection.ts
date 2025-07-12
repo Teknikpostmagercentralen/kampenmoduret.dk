@@ -21,7 +21,6 @@ import type {Team, TeamCreationData} from '$lib/models/team';
 import type {Game} from '$lib/models/game';
 import {constants} from "../../gamecontants";
 import {updated} from "$app/stores";
-import {PUBLIC_FIREBASE_API_KEY, PUBLIC_FIREBASE_APP_ID, PUBLIC_FIREBASE_AUTHDOMAIN, PUBLIC_FIREBASE_DATABASE_URL, PUBLIC_FIREBASE_MEASUREMENT_ID, PUBLIC_FIREBASE_MESSAGING_SENDER_ID, PUBLIC_FIREBASE_PROJECT_ID, PUBLIC_FIREBASE_STORAGE_BUCKET} from "$env/static/public";
 import {userState} from "../../stores/userstate";
 
 export interface FirebaseDataCallback<T> {

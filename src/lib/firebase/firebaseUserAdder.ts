@@ -2,7 +2,6 @@ import {initializeApp} from "firebase/app";
 import type {FirebaseConfigProperties} from "./firebaseconnection";
 import {createUserWithEmailAndPassword, getAuth, updateProfile, } from "firebase/auth";
 import type {UserCredential} from "firebase/auth";
-import {PUBLIC_FIREBASE_API_KEY, PUBLIC_FIREBASE_APP_ID, PUBLIC_FIREBASE_AUTHDOMAIN, PUBLIC_FIREBASE_DATABASE_URL, PUBLIC_FIREBASE_MEASUREMENT_ID, PUBLIC_FIREBASE_MESSAGING_SENDER_ID, PUBLIC_FIREBASE_PROJECT_ID, PUBLIC_FIREBASE_STORAGE_BUCKET} from "$env/static/public";
 
 
 /*const firebaseConfig: FirebaseConfigProperties = {

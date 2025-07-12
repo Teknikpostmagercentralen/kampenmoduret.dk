@@ -10,7 +10,8 @@
     import {sumCollectedTime} from "$lib/game/gameLogic";
     import {get, writable} from "svelte/store";
     import { afterNavigate } from '$app/navigation';
-    import {PUBLIC_CURRENT_APP_URL} from '$env/static/public';
+    import { ConfigConstants } from '$lib/config/config-constants';
+
 
     const teamsShownInTable = writable<TeamWithTime[]>([]);// the public data in the table, so we can control when its updated. And its not just updated while calculating new values
     let timeout: NodeJS.Timeout;
@@ -51,14 +52,10 @@
     }
 
     onMount(() => {
-        console.log(`Onmount: ${PUBLIC_CURRENT_APP_URL}`);
-        console.log("HEJHEHEHJE")
+        let url = ConfigConstants.getURL();
+        console.log(`URL: ${url}`)
     });
 
-
-    afterNavigate(() => {
-        console.log('Navigated to new page hej');
-    });
 
 
 
