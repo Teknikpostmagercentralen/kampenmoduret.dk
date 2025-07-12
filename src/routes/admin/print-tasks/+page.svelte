@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { goto, invalidateAll } from '$app/navigation';
 	import type { Task } from '$lib/models/task';
 	import { FirebaseConnection } from '../../../lib/firebase/firebaseconnection';
+	import { ConfigConstants } from '$lib/config/config-constants';
 
 	let tasks: Task[];
 
@@ -15,7 +15,8 @@
 	}
 
 	function generateQrUrl(key: string, task: Task): string {
-		const taskUrl = `https://kampenmoduret.dk/tasks/${key}`;
+		const baseURL = ConfigConstants.getURL()
+		const taskUrl = `${baseURL}/tasks/${key}`;
 		const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(taskUrl)}`;
 		return qrUrl;
 	}

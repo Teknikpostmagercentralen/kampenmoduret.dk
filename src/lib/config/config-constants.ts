@@ -7,7 +7,7 @@ export class ConfigConstants {
         if (env.PUBLIC_CURRENT_APP_URL) {
             return env.PUBLIC_CURRENT_APP_URL;
         }
-        
+
         //If not net in env just use it from the browser window
         const baseUrl = `${window.location.protocol}//${window.location.host}`;
         return baseUrl

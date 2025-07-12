@@ -10,7 +10,6 @@
     import {sumCollectedTime} from "$lib/game/gameLogic";
     import {get, writable} from "svelte/store";
     import { afterNavigate } from '$app/navigation';
-    import { ConfigConstants } from '$lib/config/config-constants';
 
 
     const teamsShownInTable = writable<TeamWithTime[]>([]);// the public data in the table, so we can control when its updated. And its not just updated while calculating new values
@@ -50,14 +49,6 @@
             }
         });
     }
-
-    onMount(() => {
-        let url = ConfigConstants.getURL();
-        console.log(`URL: ${url}`)
-    });
-
-
-
 
 
     if (browser) {
