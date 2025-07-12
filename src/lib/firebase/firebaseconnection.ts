@@ -62,7 +62,6 @@ const firebaseConfig = {
     measurementId: "G-ZKE0FSGP3Y"
 };
 
-
 const app = initializeApp(firebaseConfig);
 
 export class NotValidCredentialsError extends Error {
@@ -401,12 +400,13 @@ export class FirebaseConnection {
     }
 
 
-    killAllListenersFromThisPage() {
+    async killAllListenersFromThisPage() {
         for (const unsubscribe of this.unsubscribeMethodsFromListeners) {
             unsubscribe();
         }
-        this.teamUnsubscribeMethod;
-        this.gameUnsubscribeMethod;
+
+        this.teamUnsubscribeMethod?.();
+        this.gameUnsubscribeMethod?.();
         this.unsubscribeMethodsFromListeners = [];
     }
 
@@ -476,7 +476,6 @@ export class FirebaseConnection {
         const db = getDatabase()
         const snapshot = await get(ref(db, `${FirebaseContants.TEAMS_ROOT}/${teamId}/${FirebaseContants.DEATH_TIMESTAMP}`))
         const isdead = snapshot.exists()
-        console.log(isdead)
         return Promise.resolve(isdead)
     }
 
@@ -495,7 +494,6 @@ export class FirebaseConnection {
     }
 
     async resetAllTeams(): Promise<void> {
-        console.log("lol")
         const db = getDatabase();
         const snapshot = await get(ref(db, `${FirebaseContants.TEAMS_ROOT}`));
 

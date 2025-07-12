@@ -10,7 +10,6 @@
     let participants: number;
     let success: boolean | undefined;
     let error: { code: string; message: string };
-    let user = {uid: "geh"} //fixme Delete this line
 
     function register() {
         if (browser) {
@@ -99,12 +98,6 @@
         {#if !success && success !== undefined}
             <div class="notification is-danger">
                 {error?.message}
-            </div>
-        {/if}
-
-        {#if success && success !== undefined}
-            <div class="notification is-success">
-                User {teamName} with user id {user.uid} was created!🎉
             </div>
         {/if}
     </div>
