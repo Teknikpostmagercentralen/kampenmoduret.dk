@@ -43,3 +43,18 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+
+
+## 🚀 Deploying
+
+This project uses **Cloudflare Pages** for deployment with the following setup:
+
+- ✅ **Pushing to `main`** triggers a **preview deployment** (useful for testing).
+- ✅ **Pushing to `production`** triggers a **production deployment**, updating the live site at [https://kampenmoduret.dk](https://kampenmoduret.dk).
+
+### 🔧 Manual Preview Deployment
+
+You can also deploy manually as a preview **without committing** using Wrangler:
+
+```bash
+wrangler pages deploy .svelte-kit/cloudflare --project-name=kampenmoduret-dk
