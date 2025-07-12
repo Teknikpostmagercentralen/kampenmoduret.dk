@@ -12,6 +12,8 @@
     import {GameState} from '$lib/models/game-state';
     import {readable} from 'svelte/store';
 
+    let updateTeamsLoopTimer: ReturnType<typeof setTimeout>;
+    let tickerTimer: ReturnType<typeof setTimeout>;
 
     /* Value is never used but because the table is derived from the value its updated when the value is updated ewhich is every second*/
     export const timeTicker = readable(0, (set) => {
@@ -42,7 +44,6 @@
     }
 
     const teamsShownInTable = writable<TeamWithTime[]>([]);// the public data in the table, so we can control when its updated. And its not just updated while calculating new values
-    let timeout: NodeJS.Timeout;
     let rawTeamData = writable<Record<string, Team>>({});
 
     const rawGameData = writable<Game>({
@@ -77,22 +78,18 @@
         });
     }
 
+
+
+
     onDestroy(async () => {
+
 
         await FirebaseConnection.getInstance().then((instance) => {
             instance.killAllListenersFromThisPage();
         });
-    });
-    FirebaseConnection.getInstance().then(async (instance) => {
 
-        instance.onUserReady(async () => (
-            displayName = await instance.getAdminDisplayName()
-        ))
-    })
-    onDestroy(async () => {
-
-
-        clearTimeout(timeout);
+        clearTimeout(updateTeamsLoopTimer);
+        clearTimeout(tickerTimer);
         await FirebaseConnection.getInstance().then((instance) => {
             instance.killAllListenersFromThisPage();
         });
@@ -126,11 +123,12 @@
             })();
         }
     );
-    
+
     if (browser) {
 
         FirebaseConnection.getInstance().then(async (instance) => {
             await instance.onUserReady(async () => {
+                displayName = await instance.getAdminDisplayName()
                 await getUser();
             });
         });
@@ -151,17 +149,6 @@
             startUpdateTeamsLoop(); // start the timer to update teams
         });
     }
-
-    function sortTeams(teams: Team[], gameData: Game): TeamWithTime[] {
-        return teams
-            .map((team) => ({
-                ...team,
-                secondsLeft: getTimeLeft(team, gameData), // Calculate time left
-                allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime, // Calculate total earned time
-            }))
-            .sort((a, b) => b.allSecondsEarned - a.allSecondsEarned); // Sort by allSecondsEarned
-    }
-
 
     function addZero(input: number): string {
         if (input < 10) {
