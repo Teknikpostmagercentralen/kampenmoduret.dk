@@ -8,6 +8,7 @@
 	import type { User } from '../../lib/models/user';
 	import {goto} from "$app/navigation";
 	import {GameState} from "$lib/models/game-state.js";
+	import {TimeFormatter} from "$lib/game/time-formatter.js";
 
 	let user: User;
 	let timeLeft: number; // Set the starting time
@@ -65,19 +66,6 @@
 		}, 1000);
 	}
 
-	function addZero(input: number): string {
-		if (input < 10) {
-			return `0${input}`;
-		} else {
-			return `${input}`;
-		}
-	}
-
-	function formatTime(time: number): string {
-		const m = Math.floor(time / 60);
-		const s = time % 60;
-		return `${addZero(m)}:${addZero(s)}`;
-	}
 
 	if (browser) {
 		getUser();
@@ -92,7 +80,7 @@
 			class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center ${timeLeft === 0 ? 'has-background-danger' : 'has-background-success'}`}
 		>
 			<div class="has-text-white has-text-centered" style="font-size: 8rem;">
-				{formatTime(timeLeft)}
+				{TimeFormatter.formatTime(timeLeft)}
 			</div>
 
 			<!-- Lower right corner number -->

@@ -11,6 +11,7 @@
     import {derived, get, writable} from "svelte/store";
     import {GameState} from '$lib/models/game-state';
     import {readable} from 'svelte/store';
+    import {TimeFormatter} from "$lib/game/time-formatter.js";
 
     let updateTeamsLoopTimer: ReturnType<typeof setTimeout>;
     let tickerTimer: ReturnType<typeof setTimeout>;
@@ -79,11 +80,7 @@
     }
 
 
-
-
     onDestroy(async () => {
-
-
         await FirebaseConnection.getInstance().then((instance) => {
             instance.killAllListenersFromThisPage();
         });
@@ -148,20 +145,6 @@
             });
             startUpdateTeamsLoop(); // start the timer to update teams
         });
-    }
-
-    function addZero(input: number): string {
-        if (input < 10) {
-            return `0${input}`;
-        } else {
-            return `${input}`;
-        }
-    }
-
-    function formatTime(time: number): string {
-        const m = Math.floor(time / 60);
-        const s = time % 60;
-        return `${addZero(m)}:${addZero(s)}`;
     }
 
 
@@ -273,7 +256,7 @@
                     {#each $teamsShownInTableV2 as team}
                         <tr class:has-text-danger={team.deathTimestamp}>
                             <td>{team.username}</td>
-                            <td>{formatTime(team.secondsLeft)}</td>
+                            <td>{TimeFormatter.formatTime(team.secondsLeft)}</td>
                             <td>{team.allSecondsEarned}</td>
                             <td>{team.participants}</td>
                             {#if team.lastCompletedTask}
