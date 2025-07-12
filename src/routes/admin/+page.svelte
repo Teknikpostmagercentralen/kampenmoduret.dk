@@ -10,6 +10,8 @@
     import {sumCollectedTime} from "$lib/game/gameLogic";
     import {get, writable} from "svelte/store";
     import { afterNavigate } from '$app/navigation';
+	import { FirebaseConstants } from '$lib/firebase/firebaseConstants';
+	import { GameState } from '$lib/models/game-state';
 
 
     const teamsShownInTable = writable<TeamWithTime[]>([]);// the public data in the table, so we can control when its updated. And its not just updated while calculating new values
@@ -17,9 +19,9 @@
     let rawTeamData = writable<Record<string, Team>>({});
 
     const rawGameData = writable<Game>({
-        gameLengthInSeconds: 0,   // Default to 0 or another placeholder value
-        multiplier: 1,            // Default multiplier
-        started: false           // Assume the game hasn't started
+        gameLengthInSeconds: 0,                             // Default to 0 or another placeholder value
+        multiplier: 1,                                      // Default multiplier
+        gameState: GameState.WELCOME                        // Assume the game is in welcome state
     });
 
     let user: User;
@@ -138,6 +140,7 @@
             instance.registerGameListener({
                 onDataChanged: async (gameUpdate) => {
                     rawGameData.set(gameUpdate)
+                    console.log(gameUpdate)
                     updateAndSortTableData()
                 }
             });
@@ -253,45 +256,51 @@
         <div class="box">
             <h2 class="subtitle has-text-grey">Game controls</h2>
             <div class="buttons">
-                <button class="button has-background-grey-dark has-text-white"
-                        on:click={async () => {
-                            await confirmAction("set new start timestamp", async () => {
-                                await FirebaseConnection.getInstance().then(async (instance) => {
-                                    await instance.startGame();
-                                });
-                            });
-			            }}>Set new start timestamp (no reset)
-                </button>
-
                 <button class="button has-background-danger has-text-white"
                         on:click={async () => {
-                            await confirmAction("start the game", async () => {
+                            await confirmAction("Start the game", async () => {
                                 await FirebaseConnection.getInstance().then(async (instance) => {
-                                    await instance.resetAllTeams();
                                     await instance.startGame();
                                 });
                             });
-			            }}>START game
+			            }}
+                        disabled='{$rawGameData.gameState === GameState.STARTED}'
+                        >START game
                 </button>
 
                 <button class="button has-background-danger has-text-white"
                         on:click={async () => {
                             await confirmAction("deactivate the game", async () => {
                                 await FirebaseConnection.getInstance().then(async (instance) => {
-                                    await instance.stopGame();
+                                    await instance.deactivateGame();
                                 });
                             });
-			            }}>Deactivate Game
+			            }}
+                        disabled='{$rawGameData.gameState === GameState.DEACTIVATED}'
+                        >Deactivate Game
                 </button>
 
                 <button class="button has-background-danger has-text-white"
                         on:click={async () => {
-                            await confirmAction("activate the game", async () => {
+                            await confirmAction("Activate the game", async () => {
                                 await FirebaseConnection.getInstance().then(async (instance) => {
                                     await instance.setGameStarted();
                                 });
                             });
-			            }}>Activate Game
+			            }}
+                        disabled='{$rawGameData.gameState === GameState.STARTED}'
+                        >Activate Game
+                </button>
+
+                <button class="button has-background-danger has-text-white"
+                        on:click={async () => {
+                            await confirmAction("DELETE all data and RESET game", async () => {
+                                await FirebaseConnection.getInstance().then(async (instance) => {
+                                    await instance.resetAllTeams();
+                                    await instance.resetGameToWelcomeState();
+                                });
+                            });
+			            }}>DELETE all data and RESET game
                 </button>
             </div>
         </div>

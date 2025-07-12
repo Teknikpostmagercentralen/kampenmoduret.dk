@@ -198,6 +198,11 @@ export class FirebaseConnection {
         });
     }
 
+    async resetGameToWelcomeState(){
+        const db = getDatabase()
+        await set(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`), FirebaseConstants.GAME_STATE_WELCOME)
+    }
+
     async startGame() {
         const db = getDatabase()
         const updates: { [key: string]: any } = {}
@@ -206,6 +211,11 @@ export class FirebaseConnection {
         updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.START_TIMESTAMP}`] = serverTimestamp()
 
         await update(ref(db), updates)
+    }
+
+    async deactivateGame(){
+        const db = getDatabase()
+        await set(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`), FirebaseConstants.GAME_STATE_DEACTIVATED)
     }
 
     async stopGame() {
