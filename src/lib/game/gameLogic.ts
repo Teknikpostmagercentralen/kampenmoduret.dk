@@ -14,6 +14,15 @@ export function sumCollectedTime(completedTasks: TaskDictionary | undefined): nu
     return sum;
 }
 
+export class GameInWrongStateError implements Error {
+    constructor(message: string) {
+        this.message = message
+    }
+
+    message: string;
+    name: string = "GAME_IN_WRONG_STATE_TO_DO_THIS";
+}
+
 export async function getTimeLeft(team: Team, game: Game): Promise<number> {
     // Calculate the sum of teams collected time
     const collectedTime = sumCollectedTime(team.completedTasks);
@@ -33,6 +42,6 @@ export async function getTimeLeft(team: Team, game: Game): Promise<number> {
             return 0;
         }
     } else {
-        throw new Error("Makrelsalat");
+        throw new GameInWrongStateError("Game not started yet")
     }
 }

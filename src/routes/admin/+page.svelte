@@ -6,8 +6,7 @@
     import type {Team, TeamWithTime} from '$lib/models/team';
     import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
     import type {Game} from '$lib/models/game';
-    import {getTimeLeft} from '$lib/game/gameLogic';
-    import {sumCollectedTime} from "$lib/game/gameLogic";
+    import {sumCollectedTime, GameInWrongStateError, getTimeLeft} from "$lib/game/gameLogic";
     import {derived, get, writable} from "svelte/store";
     import {GameState} from '$lib/models/game-state';
     import {readable} from 'svelte/store';
@@ -25,10 +24,14 @@
         return () => clearInterval(interval); // oprydning
     });
 
+    
+
     function startUpdateTeamsLoop() {
         setTimeout(async () => {
             const teams = get(rawTeamData); // Get raw team data
+            if (Object.keys(teams).length === 0) return; //if no teams on list fail fast
             const instance = await FirebaseConnection.getInstance();
+
 
             for (const [teamId, team] of Object.entries(teams)) {
                 const secondsLeft = await getTimeLeft(team, get(rawGameData));
@@ -94,17 +97,28 @@
     export const teamsShownInTableV2 = derived(
         [rawTeamData, rawGameData, timeTicker],
         ([teams, gameData], set) => {
-            if (!teams || !gameData || Object.keys(teams).length === 0) {
-                set([]);
-                return;
-            }
-
             (async () => {
+                if (!teams || !gameData || Object.keys(teams).length === 0) {
+                    set([]);
+                    return;
+                }
+
+                if (Object.keys(teams).length === 0) return; //if no teams on list fail fast
+                if (Object.keys(gameData).length === 0) return; //if no teams on list fail fast
+
                 const teamArray = Object.values(teams);
 
                 const processedTeams: TeamWithTime[] = await Promise.all(
                     teamArray.map(async (team) => {
-                        const timeLeft = await getTimeLeft(team, gameData);
+                        let timeLeft;
+                        try {
+                            timeLeft = await getTimeLeft(team, gameData);
+
+                         } catch (e) {
+                            if (e instanceof GameInWrongStateError) {
+                            timeLeft = "--"
+                            }
+                        }
 
                         return {
                             ...team,
@@ -286,25 +300,25 @@
                     </tbody>
                 </table>
             </div>
-        <div class="box">
-            <h2 class="subtitle has-text-grey">Edit the Value</h2>
-            <div class="field">
-                <label class="label has-text-grey-dark">Edit the Value</label>
+            <div class="box">
+                <h2 class="subtitle has-text-grey">Edit the Value</h2>
+                <div class="field">
+                    <label class="label has-text-grey-dark">Edit the Value</label>
+                    <div class="control">
+                        <input
+                                class="input"
+                                type="number"
+                                bind:value={gameMultiplierInputFieldValue}
+                                placeholder="Enter new value"
+                        />
+                    </div>
+                </div>
+
+                <p class="has-text-grey-dark mt-5 mb-5">Whole and decimal numbers supported. For example, 1 or 5 or 1.6</p>
+
                 <div class="control">
-                    <input
-                            class="input"
-                            type="number"
-                            bind:value={gameMultiplierInputFieldValue}
-                            placeholder="Enter new value"
-                    />
+                    <button class="button has-background-primary has-text-white" on:click={saveNewValue}>Save</button>
                 </div>
             </div>
-
-            <p class="has-text-grey-dark mt-5 mb-5">Whole and decimal numbers supported. For example, 1 or 5 or 1.6</p>
-
-            <div class="control">
-                <button class="button has-background-primary has-text-white" on:click={saveNewValue}>Save</button>
-            </div>
         </div>
-    </div>
 </main>
