@@ -213,7 +213,7 @@
                                 });
                             });
 			            }}
-                        disabled='{$rawGameData.gameState === GameState.DEACTIVATED || $rawGameData.gameState === GameState.STOPPED}'
+                        disabled='{$rawGameData.gameState === GameState.DEACTIVATED || $rawGameData.gameState === GameState.STOPPED || $rawGameData.gameState === GameState.WELCOME}'
                 >Deactivate Game
                 </button>
 
@@ -225,7 +225,7 @@
                                 });
                             });
 			            }}
-                        disabled='{$rawGameData.gameState === GameState.STARTED || $rawGameData.gameState === GameState.STOPPED}'
+                        disabled='{$rawGameData.gameState === GameState.STARTED || $rawGameData.gameState === GameState.STOPPED || $rawGameData.gameState === GameState.WELCOME}'
                 >Activate Game
                 </button>
 
@@ -237,7 +237,7 @@
                                 });
                             });
 			            }}
-                        disabled='{$rawGameData.gameState === GameState.STOPPED}'
+                        disabled='{$rawGameData.gameState === GameState.STOPPED || $rawGameData.gameState === GameState.WELCOME}'
                 >Stop Game
                 </button>
 
