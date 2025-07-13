@@ -35,12 +35,19 @@
 
                 try {
                     const secondsLeft = await getTimeLeft(team, game);
-                    if (shouldTeamBeMarkedDead(game, team, teamId, secondsLeft)) {
-                        await FirebaseConnection.getInstance().then(async (instance) => {
-                            await instance.setTeamDead(teamId)
 
-                        });
-                    }
+                    await FirebaseConnection.getInstance().then(async (instance) =>{
+                        let dead = await instance.isTeamDead(teamId)
+                        if(!dead){
+                            let shouldbeDead = shouldTeamBeMarkedDead(game, team, teamId, secondsLeft)
+                            if(shouldbeDead) {
+                                await instance.setTeamDead(teamId)
+                                console.log("You dead jim: " + team.username + " - " + teamId)
+                                console.log("timeleft: " + secondsLeft)
+                            }
+                        }
+
+                    })
                 } catch (e) {
                     //empty catch
                 }

@@ -49,10 +49,26 @@
             if (team && game) {
                 try {
                     timeLeft = await getTimeLeft(team, game);
+
+
+                    await FirebaseConnection.getInstance().then(async (instance) =>{
+                        let dead = await instance.isTeamDead(user.firebaseUserID)
+                        if(!dead){
+                            let shouldbeDead = shouldTeamBeMarkedDead(game, team, user.firebaseUserID, timeLeft)
+                            if(shouldbeDead) {
+                                await instance.setTeamDead(user.firebaseUserID)
+                                console.log("You dead jim: " + team.username + " - " + user.firebaseUserID)
+                                console.log("timeleft: " + timeLeft)
+                            }
+                        }
+
+                    })
+
+
+
                     if (shouldTeamBeMarkedDead(game, team, user.firebaseUserID, timeLeft)) {
                         await FirebaseConnection.getInstance().then(async (instance) => {
                             await instance.setTeamDead(user.firebaseUserID)
-
                         });
                     }
                 } catch (e) {

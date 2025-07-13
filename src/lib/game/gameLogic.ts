@@ -42,13 +42,7 @@ function calculateTeamTimeRoundUpToZeroIfNegative(totalTimeCollectedFromTeam: nu
 }
 
 export async function shouldTeamBeMarkedDead(game: Game, team: Team, uid: string, timeLeft: number) {
-    if (timeLeft !== undefined && timeLeft <= 0 && (game.gameState !== GameState.STOPPED || game.gameState !== GameState.WELCOME) ) { //If game is stopped we dont want new deathtimeestamp
-        console.log("You dead jim: " + team.username + " - " + uid)
-        return await FirebaseConnection.getInstance().then(async (instance) => {
-            if (await !instance.isTeamDead(uid)) return true
-            else return false
-        })
-    }
+    return (timeLeft !== undefined && timeLeft <= 0 && (game.gameState !== GameState.STOPPED || game.gameState !== GameState.WELCOME)) //If game is stopped we dont want new deathtimeestamp
 }
 
 export async function getTimeLeft(team: Team, game: Game): Promise<number> {
