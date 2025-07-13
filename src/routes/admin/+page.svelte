@@ -215,7 +215,7 @@
                                 });
                             });
 			            }}
-                        disabled='{$rawGameData.gameState === GameState.STARTED}'
+                        disabled='{$rawGameData.gameState !== GameState.WELCOME}'
                 >START game
                 </button>
 
