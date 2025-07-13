@@ -6,7 +6,7 @@
     import type {Team, TeamWithTime} from '$lib/models/team';
     import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
     import type {Game} from '$lib/models/game';
-    import {sumCollectedTime, GameInWrongStateError, getTimeLeft} from "$lib/game/gameLogic";
+    import {sumCollectedTime, GameInWrongStateError, getTimeLeft, shouldTeamBeMarkedDead} from "$lib/game/gameLogic";
     import {derived, get, writable} from "svelte/store";
     import {GameState} from '$lib/models/game-state';
     import {readable} from 'svelte/store';
@@ -29,16 +29,23 @@
         setTimeout(async () => {
             const teams = get(rawTeamData); // Get raw team data
             if (Object.keys(teams).length === 0) return; //if no teams on list fail fast
-            const instance = await FirebaseConnection.getInstance();
 
             for (const [teamId, team] of Object.entries(teams)) {
-                const secondsLeft = await getTimeLeft(team, get(rawGameData));
+                const game = get(rawGameData)
 
-                if (secondsLeft === 0 && !team.deathTimestamp) {
-                    if (!await instance.isTeamDead(teamId)) {
-                        await instance.setTeamDead(teamId);
+                try {
+                    const secondsLeft = await getTimeLeft(team, game);
+                    if (shouldTeamBeMarkedDead(game, team, teamId, secondsLeft)) {
+                        await FirebaseConnection.getInstance().then(async (instance) => {
+                            await instance.setTeamDead(teamId)
+
+                        });
                     }
+                } catch (e) {
+                    //empty catch
                 }
+
+
             }
 
             startUpdateTeamsLoop(); // Continue loop

@@ -3,7 +3,7 @@
     import {FirebaseConnection} from '../../lib/firebase/firebaseconnection';
     import {onDestroy} from 'svelte';
     import type {Team} from '$lib/models/team';
-    import {getTimeLeft} from '$lib/game/gameLogic';
+    import {getTimeLeft, shouldTeamBeMarkedDead} from '$lib/game/gameLogic';
     import type {Game} from '$lib/models/game';
     import type {User} from '../../lib/models/user';
     import {goto} from "$app/navigation";
@@ -46,15 +46,24 @@
 
     function updateTimeLeft() {
         timeout = setTimeout(async () => {
-            if (team && game && (game.gameState !== GameState.WELCOME)) {
-                timeLeft = await getTimeLeft(team, game);
+            if (team && game) {
+                try {
+                    timeLeft = await getTimeLeft(team, game);
+                    if (shouldTeamBeMarkedDead(game, team, user.firebaseUserID, timeLeft)) {
+                        await FirebaseConnection.getInstance().then(async (instance) => {
+                            await instance.setTeamDead(user.firebaseUserID)
+
+                        });
+                    }
+                } catch (e) {
+                    //empty catch
+                }
+
             }
-            if (timeLeft !== undefined && timeLeft <= 0) { //He's Dead, Jim
-                console.log("You dead jim")
-                await FirebaseConnection.getInstance().then(async (instance) => {
-                    if (await !instance.isTeamDead(user.firebaseUserID)) await instance.setTeamDead(user.firebaseUserID)
-                })
-            }
+
+
+
+
             updateTimeLeft();
         }, 1000);
     }

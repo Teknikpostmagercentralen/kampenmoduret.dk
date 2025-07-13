@@ -3,6 +3,7 @@ import type {CompletedTaskInTeams} from "$lib/models/completed-task-in-teams";
 import type {Game} from "$lib/models/game";
 import type {TaskDictionary, Team} from "$lib/models/team";
 import type {BenchTask} from "vitest";
+import {GameState} from "../models/game-state";
 
 export function sumCollectedTime(completedTasks: TaskDictionary | undefined): number {
     let sum = 0;
@@ -37,6 +38,16 @@ function calculateTeamTimeRoundUpToZeroIfNegative(totalTimeCollectedFromTeam: nu
         return timeLeft
     } else {
         return 0;
+    }
+}
+
+export async function shouldTeamBeMarkedDead(game: Game, team: Team, uid: string, timeLeft: number) {
+    if (timeLeft !== undefined && timeLeft <= 0 && (game.gameState !== GameState.STOPPED || game.gameState !== GameState.WELCOME) ) { //If game is stopped we dont want new deathtimeestamp
+        console.log("You dead jim: " + team.username + " - " + uid)
+        return await FirebaseConnection.getInstance().then(async (instance) => {
+            if (await !instance.isTeamDead(uid)) return true
+            else return false
+        })
     }
 }
 
