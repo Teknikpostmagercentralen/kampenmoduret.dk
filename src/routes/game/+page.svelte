@@ -98,6 +98,13 @@
 		<p class="title is-1 has-text-centered has-text-white">Game Over!</p>
 		<p class="title is-4 has-text-centered has-text-white">Thanks for playing!</p>
 		</div>
+	{:else if game && game.gameState === GameState.WELCOME}
+		<div
+			class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center has-background-link`}
+		>
+		<p class="title is-1 has-text-centered has-text-white">All set!</p>
+		<p class="title is-4 has-text-centered has-text-white">Waiting for game to start</p>
+		</div>
 	{:else}
 		<div
 			class={`hero is-fullheight is-flex is-justify-content-center is-align-items-center has-background-warning`}
@@ -105,9 +112,6 @@
 			{#if game && game.gameState === GameState.DEACTIVATED}
 			<p class="title is-1 has-text-centered">Game paused!</p>
 			<p class="title is-4 has-text-centered">Waiting for game to resume</p>
-			{:else if game && game.gameState === GameState.WELCOME}
-				<p class="title is-1 has-text-centered">All set!</p>
-				<p class="title is-4 has-text-centered">Waiting for game to start</p>
 			{:else}
 				<p class="title is-1 has-text-centered">Loading</p>
 			{/if}
