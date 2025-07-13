@@ -200,7 +200,12 @@ export class FirebaseConnection {
 
     async resetGameToWelcomeState(){
         const db = getDatabase()
-        await set(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`), FirebaseConstants.GAME_STATE_WELCOME)
+        const updates: { [key: string]: any } = {}
+
+        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_WELCOME
+        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.START_TIMESTAMP}`] = null
+
+        await update(ref(db), updates)
     }
 
     async startGame() {
