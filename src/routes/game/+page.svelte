@@ -62,14 +62,6 @@
                         }
 
                     })
-
-
-
-                    if (shouldTeamBeMarkedDead(game, team, user.firebaseUserID, timeLeft)) {
-                        await FirebaseConnection.getInstance().then(async (instance) => {
-                            await instance.setTeamDead(user.firebaseUserID)
-                        });
-                    }
                 } catch (e) {
                     //empty catch
                 }
