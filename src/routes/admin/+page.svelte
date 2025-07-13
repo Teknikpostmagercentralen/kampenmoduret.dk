@@ -24,14 +24,12 @@
         return () => clearInterval(interval); // oprydning
     });
 
-    
 
     function startUpdateTeamsLoop() {
         setTimeout(async () => {
             const teams = get(rawTeamData); // Get raw team data
             if (Object.keys(teams).length === 0) return; //if no teams on list fail fast
             const instance = await FirebaseConnection.getInstance();
-
 
             for (const [teamId, team] of Object.entries(teams)) {
                 const secondsLeft = await getTimeLeft(team, get(rawGameData));
@@ -114,9 +112,8 @@
                         try {
                             timeLeft = await getTimeLeft(team, gameData);
 
-                         } catch (e) {
+                        } catch (e) {
                             if (e instanceof GameInWrongStateError) {
-                            timeLeft = "--"
                             }
                         }
 
@@ -287,7 +284,16 @@
                     {#each $teamsShownInTableV2 as team}
                         <tr class:has-text-danger={team.deathTimestamp}>
                             <td>{team.username}</td>
-                            <td>{TimeFormatter.formatTime(team.secondsLeft)}</td>
+                            <td>
+                                {#if $rawGameData.gameState === GameState.STARTED || $rawGameData.gameState === GameState.DEACTIVATED}
+                                    {TimeFormatter.formatTime(team.secondsLeft)}
+                                {:else if $rawGameData.gameState === GameState.STOPPED}
+                                    {TimeFormatter.formatTime(team.secondsLeft)}
+                                {:else}
+                                    --:--
+                                {/if}
+
+                            </td>
                             <td>{team.allSecondsEarned}</td>
                             <td>{team.participants}</td>
                             {#if team.lastCompletedTask}

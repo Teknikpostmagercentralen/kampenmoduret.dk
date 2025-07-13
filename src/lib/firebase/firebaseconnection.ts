@@ -204,6 +204,8 @@ export class FirebaseConnection {
 
         updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_WELCOME
         updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.START_TIMESTAMP}`] = null
+        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.STOP_TIMESTAMP}`] = null
+
 
         await update(ref(db), updates)
     }
@@ -225,8 +227,12 @@ export class FirebaseConnection {
 
     async stopGame() {
         const db = getDatabase()
-        await set(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`), FirebaseConstants.GAME_STATE_STOPPED)
+        const updates: { [key: string]: any } = {}
 
+        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_STOPPED
+        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.STOP_TIMESTAMP}`] = serverTimestamp()
+
+        await update(ref(db), updates)
     }
 
     async setGameStarted() {

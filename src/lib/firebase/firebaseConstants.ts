@@ -7,6 +7,7 @@ export class FirebaseConstants {
     static ADMIN_ROOT = "admins"
     static MULTIPLIER: string = "multiplier";
     static START_TIMESTAMP: string = "startTimestamp";
+    static STOP_TIMESTAMP: string = "stopTimestamp";
     static DEATH_TIMESTAMP: string = "deathTimestamp";
     static DISPLAY_NAME: string = "displayName";
 
