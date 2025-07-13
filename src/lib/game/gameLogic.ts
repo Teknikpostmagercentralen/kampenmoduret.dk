@@ -41,7 +41,7 @@ function calculateTeamTimeRoundUpToZeroIfNegative(totalTimeCollectedFromTeam: nu
     }
 }
 
-export async function shouldTeamBeMarkedDead(game: Game, team: Team, uid: string, timeLeft: number) {
+export function shouldTeamBeMarkedDead(game: Game, team: Team, uid: string, timeLeft: number) {
     return (timeLeft !== undefined && timeLeft <= 0 && (game.gameState !== GameState.STOPPED || game.gameState !== GameState.WELCOME)) //If game is stopped we dont want new deathtimeestamp
 }
 

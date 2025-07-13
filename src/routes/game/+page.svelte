@@ -50,7 +50,6 @@
                 try {
                     timeLeft = await getTimeLeft(team, game);
 
-
                     await FirebaseConnection.getInstance().then(async (instance) =>{
                         let dead = await instance.isTeamDead(user.firebaseUserID)
                         if(!dead){
