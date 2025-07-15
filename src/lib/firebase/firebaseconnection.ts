@@ -313,17 +313,6 @@ export class FirebaseConnection {
 
     }
 
-    async getGame(): Promise<Game | false> { //fixme eewwww this should probably be null object or undefined.
-        const db = getDatabase(app);
-        const snapshot = await get(ref(db, `${FirebaseConstants.GAME_ROOT}`))
-        if (!snapshot || !snapshot.exists()) {
-            console.error("Game does not exist")
-            return false
-        }
-        const game: Game = snapshot.val()
-        return game
-    }
-
     async getTasks(): Promise<Task[]> {
         const db = getDatabase();
         const snapshot = await get(ref(db, FirebaseConstants.TASKS_ROOT))
