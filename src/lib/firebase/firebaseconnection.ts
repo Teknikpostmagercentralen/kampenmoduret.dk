@@ -19,6 +19,7 @@ import type {Task, TaskMarker} from "../models/task";
 import type {CompletedTaskInTeams} from "../models/completed-task-in-teams";
 import type {Team, TeamCreationData} from '$lib/models/team';
 import type {Game} from '$lib/models/game';
+import type {Admin} from '$lib/models/Admin';
 import {constants} from "../../gamecontants";
 import {updated} from "$app/stores";
 import {userState} from "../../stores/userstate";
@@ -38,17 +39,6 @@ export type FirebaseConfigProperties = {
     measurementId: string
 }
 
-
-/*const firebaseConfig: FirebaseConfigProperties = {
-    databaseURL: PUBLIC_FIREBASE_DATABASE_URL || "",
-    measurementId: PUBLIC_FIREBASE_MEASUREMENT_ID || "",
-    apiKey: PUBLIC_FIREBASE_API_KEY || "",
-    authDomain: PUBLIC_FIREBASE_AUTHDOMAIN || "",
-    projectId: PUBLIC_FIREBASE_PROJECT_ID || "",
-    storageBucket: PUBLIC_FIREBASE_STORAGE_BUCKET || "",
-    messagingSenderId: PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
-    appId: PUBLIC_FIREBASE_APP_ID || ""
-};*/
 const firebaseConfig = {
     apiKey: "AIzaSyBp6w5HC94OVbJvFLAV4aT28PtHO3NO5JA",
     authDomain: "kampen-mod-tiden.firebaseapp.com",
@@ -158,14 +148,14 @@ export class FirebaseConnection {
         this.unsubscribeMethodsFromListeners.push(unsubscribe);
     }
 
-    registerTeamsListener(callback: FirebaseDataCallback<Team[]>) {
+    // TODO: We are here
+    registerTeamsListener(gameId: string, callback: FirebaseDataCallback<Team>) {
         const db = getDatabase();
-        const teamsRef = ref(db, FirebaseConstants.TEAMS_ROOT);
+        const teamsRef = ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAMES_TEAMS}`);
         console.log("Registering listener for teams")
-        const unsubscribe = onValue(teamsRef, (snapshot) => {
-            callback.onDataChanged(snapshot.val());
-        });
-        this.unsubscribeMethodsFromListeners.push(unsubscribe);
+        // Register listener for all teams
+            // Register listeners for each team
+            // Save them in unsubscribeMethodsFromListeners
     }
 
     registerTeamListener(user: User, callback: FirebaseDataCallback<Team>) {
@@ -179,9 +169,9 @@ export class FirebaseConnection {
         this.teamUnsubscribeMethod = unsubscribe;
     }
 
-    registerGameListener(callback: FirebaseDataCallback<Game>) {
+    registerGameListener(gameId: string, callback: FirebaseDataCallback<Game>) {
         const db = getDatabase();
-        const gameRef = ref(db, FirebaseConstants.GAME_ROOT);
+        const gameRef = ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}`);
         this.gameUnsubscribeMethod; // This might be a function or null. If null nothing happens else it unsubscribes.
         const unsubscribe = onValue(gameRef, (snapshot) => {
             callback.onDataChanged(snapshot.val());
@@ -198,7 +188,7 @@ export class FirebaseConnection {
         });
     }
 
-    async resetGameToWelcomeState(){
+    async resetGameToWelcomeState(gameId: string){
         const db = getDatabase()
         const updates: { [key: string]: any } = {}
 
@@ -418,6 +408,19 @@ export class FirebaseConnection {
         }
         const team: Team = snapshot.val();
         return team;
+    }
+
+    async getAdmin(user: User): Promise<Admin | false> {
+        const adminId = user.firebaseUserID;
+
+        const db = getDatabase(app);
+        const snapshot = await get(ref(db, `${FirebaseConstants.ADMIN_ROOT}/${adminId}`));
+        if (!snapshot || !snapshot.exists()) {
+            console.error("This team does not exist in firebase");
+            return false;
+        }
+        const admin: Admin = snapshot.val();
+        return admin;
     }
 
     async createTask(letter: string, number: number, baseTime: number) {

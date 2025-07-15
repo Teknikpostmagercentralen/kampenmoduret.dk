@@ -1,8 +1,9 @@
 export class FirebaseConstants {
     static TASKS_ROOT = "tasks"
+    static GAMES_TEAMS = "teams"
     static TEAMS_ROOT = "teams"
     static TEAM_TASKS = "completedTasks"
-    static GAME_ROOT = "games/LCC_GAME"
+    static GAME_ROOT_NEW = "games"
     static LAST_COMPLETED_TASK = "lastCompletedTask"
     static ADMIN_ROOT = "admins"
     static MULTIPLIER: string = "multiplier";

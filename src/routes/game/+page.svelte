@@ -16,7 +16,7 @@
     let game: Game;
     let timeout: NodeJS.Timeout;
 
-    async function getUser() {
+    async function registerUserListener() {
         const firebaseConnection = await FirebaseConnection.getInstance();
         firebaseConnection.registerUserListener({
             onDataChanged: async (userUpdate) => {
@@ -27,12 +27,15 @@
                         team = teamUpdate;
                     }
                 });
-                firebaseConnection.registerGameListener({
+                firebaseConnection.getTeam(user).then((team: Team)=>{
+                    firebaseConnection.registerGameListener(team.gameId, {
                     onDataChanged: async (gameUpdate) => {
                         game = gameUpdate;
                         console.log(gameUpdate)
                     }
                 });
+                })
+                
             }
         });
     }
@@ -77,7 +80,7 @@
 
 
     if (browser) {
-        getUser();
+        registerUserListener();
         updateTimeLeft();
     }
 
