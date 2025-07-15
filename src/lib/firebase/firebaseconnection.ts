@@ -356,7 +356,7 @@ export class FirebaseConnection {
         }
         const gameSnapshot = await get(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`))
 
-        if (!gameSnapshot.exists() || gameSnapshot.val() === FirebaseConstants.GAME_STATE_STARTED) {
+        if (!gameSnapshot.exists() || gameSnapshot.val() !== FirebaseConstants.GAME_STATE_STARTED) {
             console.error("The game is not started")
             throw new GameNotStartedError("The game is not started")
         }
