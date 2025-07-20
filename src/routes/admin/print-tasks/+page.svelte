@@ -9,13 +9,15 @@
 	function getTasks() {
 		FirebaseConnection.getInstance().then((instance) => {
 			instance.onUserReady(async () => {
-				tasks = await instance.getTasks();
+				const admin = await instance.getAdmin();
+				const gameId = Object.keys(admin.games)[0];
+				tasks = await instance.getTasks(gameId);
 			});
 		});
 	}
 
 	function generateQrUrl(key: string, task: Task): string {
-		const baseURL = ConfigConstants.getURL()
+		const baseURL = ConfigConstants.getURL();
 		const taskUrl = `${baseURL}/tasks/${key}`;
 		const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(taskUrl)}`;
 		return qrUrl;

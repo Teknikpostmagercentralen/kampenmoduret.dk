@@ -1,5 +1,6 @@
 export class FirebaseConstants {
     static TASKS_ROOT = "tasks"
+    static GAME_TASKS = "tasks"
     static GAMES_TEAMS = "teams"
     static TEAMS_ROOT = "teams"
     static TEAM_TASKS = "completedTasks"

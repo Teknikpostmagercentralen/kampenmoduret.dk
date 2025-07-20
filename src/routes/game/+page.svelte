@@ -22,7 +22,7 @@
             onDataChanged: async (userUpdate) => {
                 user = userUpdate;
                 if (user.firebaseUserID === "") await goto("/user/login") //if not logged in redirect to login page
-                firebaseConnection.registerTeamListener(user, {
+                firebaseConnection.registerTeamListenerOnUser(user, {
                     onDataChanged: async (teamUpdate) => {
                         team = teamUpdate;
                     }

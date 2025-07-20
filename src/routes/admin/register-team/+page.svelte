@@ -15,7 +15,9 @@
         if (browser) {
             FirebaseConnection.getInstance().then((instance)=>{
                 instance.onUserReady(()=>{
-                    instance.register(teamName, email, password, bonusTime, participants);
+                    const admin = await instance.getAdmin()
+                    const gameId = Object.keys(admin.games)[0];
+                    instance.registerNewTeam(teamName, email, password, bonusTime, participants, gameId);
                     goto('/admin');
                 });
             });

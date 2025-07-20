@@ -70,6 +70,7 @@
 
 	let user: User;
 	let displayName: string;
+	let gameId: string;
 
 	let gameMultiplierInputFieldValue: number;
 	// Get current multiplier value and update input field on page load
@@ -92,8 +93,8 @@
 			onDataChanged: async (userUpdate) => {
 				user = userUpdate;
                 
-                const admin = await instance.getAdmin(user)
-                const gameId = Object.keys(admin.games)[0];
+                const admin = await instance.getAdmin()
+                gameId = Object.keys(admin.games)[0];
 				
                 instance.registerGameListener(gameId, {
 					onDataChanged: async (gameUpdate) => {
@@ -102,9 +103,12 @@
 				});
 
                 instance.registerTeamsListener(gameId, { // TODO: This really needs to be tested
-					onDataChanged: async (teamUpdate) => {
+					onTeamChangedOrAdded: async (teamUpdate) => {
                         $rawTeamData[teamUpdate.id] = teamUpdate
 						// Process and update the table data
+					},
+					onTeamRemovedFromGame: (removedTeamId) => {
+						delete $rawTeamData[removedTeamId] 
 					}
 				});
 				startUpdateTeamsLoop(); // start the timer to update teams
@@ -232,7 +236,9 @@
 					on:click={async () => {
 						await confirmAction('start the game', async () => {
 							await FirebaseConnection.getInstance().then(async (instance) => {
-								await instance.startGame();
+								if (gameId) {
+									await instance.startGame(gameId);
+								}
 							});
 						});
 					}}
@@ -245,7 +251,9 @@
 					on:click={async () => {
 						await confirmAction('deactivate the game', async () => {
 							await FirebaseConnection.getInstance().then(async (instance) => {
-								await instance.deactivateGame();
+								if (gameId) {
+									await instance.deactivateGame(gameId);
+								}
 							});
 						});
 					}}
@@ -260,7 +268,9 @@
 					on:click={async () => {
 						await confirmAction('activate the game', async () => {
 							await FirebaseConnection.getInstance().then(async (instance) => {
-								await instance.setGameStarted();
+								if (gameId) {
+									await instance.setGameStarted(gameId);
+								}
 							});
 						});
 					}}
@@ -275,7 +285,9 @@
 					on:click={async () => {
 						await confirmAction('stop the game', async () => {
 							await FirebaseConnection.getInstance().then(async (instance) => {
-								await instance.stopGame();
+								if (gameId) {
+									await instance.stopGame(gameId);
+								}
 							});
 						});
 					}}
@@ -289,8 +301,10 @@
 					on:click={async () => {
 						await confirmAction('DELETE all data and RESET game', async () => {
 							await FirebaseConnection.getInstance().then(async (instance) => {
-								await instance.resetAllTeams();
-								await instance.resetGameToWelcomeState();
+								if (gameId) {
+									await instance.resetAllTeams(gameId);
+									await instance.resetGameToWelcomeState(gameId);
+								}
 							});
 						});
 					}}

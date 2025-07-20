@@ -4,7 +4,7 @@ import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
     signOut,
-    updateProfile
+    updateProfile,
 } from 'firebase/auth';
 import type {IdTokenResult, Unsubscribe, UserCredential} from 'firebase/auth';
 
@@ -12,7 +12,7 @@ import type {IdTokenResult, Unsubscribe, UserCredential} from 'firebase/auth';
 import {initializeApp} from 'firebase/app';
 import {getAuth} from 'firebase/auth';
 import type {User} from "../models/user";
-import {getDatabase, ref, set, child, remove, get, onValue, push, update, serverTimestamp} from 'firebase/database';
+import {getDatabase, ref, set, child, remove, get, onValue, push, update, serverTimestamp, onChildAdded, onChildRemoved} from 'firebase/database';
 import {FirebaseUserAdder} from "./firebaseUserAdder";
 import {FirebaseConstants} from "./firebaseConstants";
 import type {Task, TaskMarker} from "../models/task";
@@ -26,6 +26,11 @@ import {userState} from "../../stores/userstate";
 
 export interface FirebaseDataCallback<T> {
     onDataChanged: (data: T) => void
+}
+
+export interface FirebaseTeamUpdateCallback{
+    onTeamRemovedFromGame: (teamId: string) => void,
+    onTeamChangedOrAdded: (teamData: Team) => void
 }
 
 export type FirebaseConfigProperties = {
@@ -115,7 +120,7 @@ export class FirebaseConnection {
     private userState: { uid: string, loggedIn: boolean } = {uid: "", loggedIn: false};
 
     private unsubscribeMethodsFromListeners: Unsubscribe[] = [];
-    private teamUnsubscribeMethod: Unsubscribe | undefined;
+    private teamUnsubscribeMethods: {[key: string]: Unsubscribe} = {};
     private gameUnsubscribeMethod: Unsubscribe | undefined;
 
     static async getInstance(): Promise<FirebaseConnection> {
@@ -148,25 +153,53 @@ export class FirebaseConnection {
         this.unsubscribeMethodsFromListeners.push(unsubscribe);
     }
 
-    // TODO: We are here
-    registerTeamsListener(gameId: string, callback: FirebaseDataCallback<Team>) {
+    registerTeamsListener(gameId: string, callback: FirebaseTeamUpdateCallback) {
         const db = getDatabase();
         const teamsRef = ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAMES_TEAMS}`);
         console.log("Registering listener for teams")
         // Register listener for all teams
-            // Register listeners for each team
-            // Save them in unsubscribeMethodsFromListeners
+        const childAddedUnsubscribe = onChildAdded(teamsRef, (snapshot) => {
+            const teamId: string = snapshot.key
+            const unsubscribe = this.registerTeamListener(teamId, {onDataChanged: (team) => {
+                callback.onTeamChangedOrAdded(team)
+            }})
+            this.teamUnsubscribeMethods[teamId] = unsubscribe;
+            console.log(`Team added ${teamId}`);
+        })
+        const childRemovedUnsubscribe = onChildRemoved(teamsRef, (snapshot) => {
+            const teamId: string = snapshot.key
+            callback.onTeamRemovedFromGame(teamId);
+
+            // Unsubscribe the teams listener and delete reference to unsubscribe method
+            const unsubscribe = this.teamUnsubscribeMethods[teamId]
+            unsubscribe()
+            delete this.teamUnsubscribeMethods[teamId]
+        })
+
+        this.unsubscribeMethodsFromListeners.push(childAddedUnsubscribe);
+        this.unsubscribeMethodsFromListeners.push(childRemovedUnsubscribe);
     }
 
-    registerTeamListener(user: User, callback: FirebaseDataCallback<Team>) {
+    registerTeamListenerOnUser(user: User, callback: FirebaseDataCallback<Team>) {
         const db = getDatabase();
         const teamID = user.firebaseUserID
-        const teamRef = ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamID}`);
-        this.teamUnsubscribeMethod; // This might be a function or null. If null nothing happens else it unsubscribes.
+        // If any team listeners are registered then we assume that there was another session because we logged out and logged in
+        if (Object.keys(this.teamUnsubscribeMethods).length > 0) {
+            const key = Object.keys(this.teamUnsubscribeMethods)[0]
+            this.teamUnsubscribeMethods[key]()
+        }
+        this.registerTeamListener(teamID, callback);
+    }
+
+    private registerTeamListener(teamId: string, callback: FirebaseDataCallback<Team>) {
+        const db = getDatabase();
+        const teamRef = ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamId}`);
         const unsubscribe = onValue(teamRef, (snapshot) => {
-            callback.onDataChanged(snapshot.val());
+            let team: Team = snapshot.val();
+            team.id = snapshot.key;
+            callback.onDataChanged(team);
         });
-        this.teamUnsubscribeMethod = unsubscribe;
+        this.teamUnsubscribeMethods[teamId] = unsubscribe;
     }
 
     registerGameListener(gameId: string, callback: FirebaseDataCallback<Game>) {
@@ -192,42 +225,42 @@ export class FirebaseConnection {
         const db = getDatabase()
         const updates: { [key: string]: any } = {}
 
-        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_WELCOME
-        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.START_TIMESTAMP}`] = null
-        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.STOP_TIMESTAMP}`] = null
+        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_WELCOME
+        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.START_TIMESTAMP}`] = null
+        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.STOP_TIMESTAMP}`] = null
 
 
         await update(ref(db), updates)
     }
 
-    async startGame() {
+    async startGame(gameId: string) {
         const db = getDatabase()
         const updates: { [key: string]: any } = {}
 
-        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_STARTED
-        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.START_TIMESTAMP}`] = serverTimestamp()
+        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_STARTED
+        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.START_TIMESTAMP}`] = serverTimestamp()
 
         await update(ref(db), updates)
     }
 
-    async deactivateGame(){
+    async deactivateGame(gameId: string){
         const db = getDatabase()
-        await set(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`), FirebaseConstants.GAME_STATE_DEACTIVATED)
+        await set(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`), FirebaseConstants.GAME_STATE_DEACTIVATED)
     }
 
-    async stopGame() {
+    async stopGame(gameId: string) {
         const db = getDatabase()
         const updates: { [key: string]: any } = {}
 
-        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_STOPPED
-        updates[`${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.STOP_TIMESTAMP}`] = serverTimestamp()
+        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_STOPPED
+        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.STOP_TIMESTAMP}`] = serverTimestamp()
 
         await update(ref(db), updates)
     }
 
-    async setGameStarted() {
+    async setGameStarted(gameId: string) {
         const db = getDatabase()
-        await set(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`), FirebaseConstants.GAME_STATE_STARTED)
+        await set(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`), FirebaseConstants.GAME_STATE_STARTED)
 
     }
 
@@ -252,7 +285,7 @@ export class FirebaseConnection {
         }
     }
 
-    async register(holdNavn: string, email: string, password: string, bonusTime: number, participants: number): Promise<void> {
+    async registerNewTeam(holdNavn: string, email: string, password: string, bonusTime: number, participants: number, gameId: string): Promise<void> {
 
         const uidOfNewUser = await FirebaseUserAdder.createNewUser(holdNavn, email, password)
 
@@ -277,42 +310,50 @@ export class FirebaseConnection {
             return;
         }
 
-        await this.writeUserData(uidOfNewUser, holdNavn, password, email, bonusTime, participants);
+        await this.writeUserData(uidOfNewUser, holdNavn, password, email, bonusTime, participants, gameId);
 
     }
 
-    async writeUserData(uid: string, holdNavn: string, password: string, email: string, bonusTime: number, participants: number) {
+    async writeUserData(uid: string, holdNavn: string, password: string, email: string, bonusTime: number, participants: number, gameId: string) {
         const db = getDatabase(app);
         const teamData: TeamCreationData = {
             username: holdNavn,
             email: email,
             bonusTime: bonusTime,
             participants: participants,
-            password: password
+            password: password,
+            gameId: gameId
         }
         await set(ref(db, `${FirebaseConstants.TEAMS_ROOT}/${uid}`), teamData);
     }
 
-    async getAllTeams(): Promise<Team[]> {
-        const db = getDatabase()
-        const teamsSnapshot = await get(ref(db, `${FirebaseConstants.TEAMS_ROOT}`))
-        const teams = teamsSnapshot.val()
-        //FIXME this will not work should be repackaged to team[]
-
-        return teams
-
-    }
-
-    async getTasks(): Promise<Task[]> {
+    async getTasks(gameId: string): Promise<Task[]> {
         const db = getDatabase();
+        const taskIdInGameRef = ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_TASKS}`)
+        const taskIdsInGameSnapshot = await get(taskIdInGameRef)
+        if (!taskIdsInGameSnapshot || !taskIdsInGameSnapshot.exists()) {
+            throw new Error('Task data fetch error');
+        }
+        const taskIdsInGame: string[] = Object.keys(taskIdsInGameSnapshot.val());
+
         const snapshot = await get(ref(db, FirebaseConstants.TASKS_ROOT))
         if (!snapshot || !snapshot.exists()) {
             throw new Error('Task data fetch error');
         }
-        const tasks: Task[] = snapshot.val();
-        return tasks;
+
+        let tasksToReturn : Task[] = []
+
+        snapshot.forEach(element => {
+            if (taskIdsInGame.indexOf(element.key) !== -1) { // Get the index where the id exists, when the id does not exist indexOf returns -1
+                tasksToReturn.push(element.val())
+            }
+        });
+
+        return tasksToReturn;
     }
 
+
+    // TODO: Fix game reference
     async writeTaskCompleted(taskID: string): Promise<Task> {
         const auth = getAuth(app);
         const currentUser = auth.currentUser;
@@ -323,6 +364,7 @@ export class FirebaseConnection {
             throw new AuthenticationError("User is not authenticated. Please log in.");
         }
 
+        // TODO: reenable check?
         // if(await this.isTeamDead(currentUser.uid)) {
         //     throw new TeamIsDeadError("You cannot complete more tasks because you have run out of time")
         // }
@@ -392,7 +434,11 @@ export class FirebaseConnection {
             unsubscribe();
         }
 
-        this.teamUnsubscribeMethod?.();
+        for (const key in this.teamUnsubscribeMethods) {
+            const unsubscribe = this.teamUnsubscribeMethods[key];
+            unsubscribe()
+        }
+
         this.gameUnsubscribeMethod?.();
         this.unsubscribeMethodsFromListeners = [];
     }
@@ -410,8 +456,8 @@ export class FirebaseConnection {
         return team;
     }
 
-    async getAdmin(user: User): Promise<Admin | false> {
-        const adminId = user.firebaseUserID;
+    async getAdmin(): Promise<Admin | false> {
+        const adminId = getAuth(app).currentUser.uid;
 
         const db = getDatabase(app);
         const snapshot = await get(ref(db, `${FirebaseConstants.ADMIN_ROOT}/${adminId}`));
@@ -423,6 +469,7 @@ export class FirebaseConnection {
         return admin;
     }
 
+    // TODO: add to game tasks
     async createTask(letter: string, number: number, baseTime: number) {
         const db = getDatabase(app);
         const taskData: Task = {
@@ -450,23 +497,20 @@ export class FirebaseConnection {
         })
     }
 
+    // TODO: Fix game reference
     async getGameMultiplier() {
         const db = getDatabase()
         const snap = await get(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.MULTIPLIER}`))
         return snap.val()
     }
 
+    // TODO: Fix game reference
     async setMultiplierValue(value: number) {
         const db = getDatabase()
         await set(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.MULTIPLIER}`), value)
 
     }
 
-    async undeathTeam(userId: string): Promise<void> {
-        const db = getDatabase()
-        await set(ref(db, `${FirebaseConstants.TEAMS_ROOT}/${userId}/${FirebaseConstants.DEATH_TIMESTAMP}`), null)
-
-    }
     async setTeamDead(userId: string): Promise<void> {
         const db = getDatabase()
         await set(ref(db, `${FirebaseConstants.TEAMS_ROOT}/${userId}/${FirebaseConstants.DEATH_TIMESTAMP}`), serverTimestamp())
@@ -493,7 +537,8 @@ export class FirebaseConnection {
         return snapshot.val()
     }
 
-    async resetAllTeams(): Promise<void> {
+    // TODO: only kill teams that belong to game    
+    async resetAllTeams(gameId: string): Promise<void> {
         const db = getDatabase();
         const snapshot = await get(ref(db, `${FirebaseConstants.TEAMS_ROOT}`));
 
