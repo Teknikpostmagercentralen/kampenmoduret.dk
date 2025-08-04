@@ -119,189 +119,207 @@ export class AlreadySolvedTaskError extends TaskError {
 }
 
 export class FirebaseConnection {
-    private constructor() {
+	private constructor() {}
 
-    }
+	private static instance: FirebaseConnection;
 
-    private static instance: FirebaseConnection;
+	private userState: { uid: string; loggedIn: boolean } = { uid: '', loggedIn: false };
 
-    private userState: { uid: string, loggedIn: boolean } = {uid: "", loggedIn: false};
+	private unsubscribeMethodsFromListeners: Unsubscribe[] = [];
+	private teamUnsubscribeMethods: { [key: string]: Unsubscribe } = {};
+	private gameUnsubscribeMethod: Unsubscribe | undefined;
 
-    private unsubscribeMethodsFromListeners: Unsubscribe[] = [];
-    private teamUnsubscribeMethods: {[key: string]: Unsubscribe} = {};
-    private gameUnsubscribeMethod: Unsubscribe | undefined;
+	static async getInstance(): Promise<FirebaseConnection> {
+		if (!FirebaseConnection.instance) {
+			FirebaseConnection.instance = new FirebaseConnection();
+			await FirebaseConnection.instance.registerInternalUserListenerToUpdateUserDataContinously();
+		}
+		return FirebaseConnection.instance;
+	}
 
-    static async getInstance(): Promise<FirebaseConnection> {
-        if (!FirebaseConnection.instance) {
-            FirebaseConnection.instance = new FirebaseConnection();
-            await FirebaseConnection.instance.registerInternalUserListenerToUpdateUserDataContinously();
-        }
-        return FirebaseConnection.instance;
-    }
+	private registerInternalUserListenerToUpdateUserDataContinously() {
+		onAuthStateChanged(getAuth(), async (userCredential) => {
+			if (userCredential) {
+				this.userState = { uid: userCredential.uid, loggedIn: true };
+			} else {
+				this.userState = { uid: '', loggedIn: false };
+			}
+		});
+	}
 
-    private registerInternalUserListenerToUpdateUserDataContinously() {
-        onAuthStateChanged(getAuth(), async (userCredential) => {
-            if (userCredential) {
-                this.userState = {uid: userCredential.uid, loggedIn: true};
-            } else {
-                this.userState = {uid: "", loggedIn: false};
-            }
-        });
-    }
+	registerUserListener(callback: FirebaseDataCallback<User>) {
+		const unsubscribe = onAuthStateChanged(getAuth(), (userCredential) => {
+			if (userCredential) {
+				callback.onDataChanged({ firebaseUserID: this.userState.uid });
+			} else {
+				callback.onDataChanged({ firebaseUserID: '' });
+			}
+		});
+		this.unsubscribeMethodsFromListeners.push(unsubscribe);
+	}
 
+	registerTeamsListener(gameId: string, callback: FirebaseTeamUpdateCallback) {
+		const db = getDatabase();
+		const teamsRef = ref(
+			db,
+			`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAMES_TEAMS}`
+		);
+		console.log('Registering listener for teams');
+		// Register listener for all teams
+		const childAddedUnsubscribe = onChildAdded(teamsRef, (snapshot) => {
+			const teamId: string = snapshot.key;
+			const unsubscribe = this.registerTeamListener(teamId, {
+				onDataChanged: (team) => {
+					callback.onTeamChangedOrAdded(team);
+				}
+			});
+			this.teamUnsubscribeMethods[teamId] = unsubscribe;
+			console.log(`Team added ${teamId}`);
+		});
+		const childRemovedUnsubscribe = onChildRemoved(teamsRef, (snapshot) => {
+			const teamId: string = snapshot.key;
+			callback.onTeamRemovedFromGame(teamId);
 
-    registerUserListener(callback: FirebaseDataCallback<User>) {
-        const unsubscribe = onAuthStateChanged(getAuth(), (userCredential) => {
-            if (userCredential) {
-                callback.onDataChanged({firebaseUserID: this.userState.uid})
-            } else {
-                callback.onDataChanged({firebaseUserID: ""})
-            }
-        });
-        this.unsubscribeMethodsFromListeners.push(unsubscribe);
-    }
+			// Unsubscribe the teams listener and delete reference to unsubscribe method
+			const unsubscribe = this.teamUnsubscribeMethods[teamId];
+			unsubscribe();
+			delete this.teamUnsubscribeMethods[teamId];
+		});
 
-    registerTeamsListener(gameId: string, callback: FirebaseTeamUpdateCallback) {
-        const db = getDatabase();
-        const teamsRef = ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAMES_TEAMS}`);
-        console.log("Registering listener for teams")
-        // Register listener for all teams
-        const childAddedUnsubscribe = onChildAdded(teamsRef, (snapshot) => {
-            const teamId: string = snapshot.key
-            const unsubscribe = this.registerTeamListener(teamId, {onDataChanged: (team) => {
-                callback.onTeamChangedOrAdded(team)
-            }})
-            this.teamUnsubscribeMethods[teamId] = unsubscribe;
-            console.log(`Team added ${teamId}`);
-        })
-        const childRemovedUnsubscribe = onChildRemoved(teamsRef, (snapshot) => {
-            const teamId: string = snapshot.key
-            callback.onTeamRemovedFromGame(teamId);
+		this.unsubscribeMethodsFromListeners.push(childAddedUnsubscribe);
+		this.unsubscribeMethodsFromListeners.push(childRemovedUnsubscribe);
+	}
 
-            // Unsubscribe the teams listener and delete reference to unsubscribe method
-            const unsubscribe = this.teamUnsubscribeMethods[teamId]
-            unsubscribe()
-            delete this.teamUnsubscribeMethods[teamId]
-        })
+	registerTeamListenerOnUser(user: User, callback: FirebaseDataCallback<Team>) {
+		const db = getDatabase();
+		const teamID = user.firebaseUserID;
+		// If any team listeners are registered then we assume that there was another session because we logged out and logged in
+		if (Object.keys(this.teamUnsubscribeMethods).length > 0) {
+			const key = Object.keys(this.teamUnsubscribeMethods)[0];
+			this.teamUnsubscribeMethods[key]();
+		}
+		this.registerTeamListener(teamID, callback);
+	}
 
-        this.unsubscribeMethodsFromListeners.push(childAddedUnsubscribe);
-        this.unsubscribeMethodsFromListeners.push(childRemovedUnsubscribe);
-    }
+	private registerTeamListener(teamId: string, callback: FirebaseDataCallback<Team>) {
+		const db = getDatabase();
+		const teamRef = ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamId}`);
+		const unsubscribe = onValue(teamRef, (snapshot) => {
+			let team: Team = snapshot.val();
+			team.id = snapshot.key;
+			callback.onDataChanged(team);
+		});
+		this.teamUnsubscribeMethods[teamId] = unsubscribe;
+	}
 
-    registerTeamListenerOnUser(user: User, callback: FirebaseDataCallback<Team>) {
-        const db = getDatabase();
-        const teamID = user.firebaseUserID
-        // If any team listeners are registered then we assume that there was another session because we logged out and logged in
-        if (Object.keys(this.teamUnsubscribeMethods).length > 0) {
-            const key = Object.keys(this.teamUnsubscribeMethods)[0]
-            this.teamUnsubscribeMethods[key]()
-        }
-        this.registerTeamListener(teamID, callback);
-    }
+	registerGameListener(gameId: string, callback: FirebaseDataCallback<Game>) {
+		const db = getDatabase();
+		const gameRef = ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}`);
+		this.gameUnsubscribeMethod; // This might be a function or null. If null nothing happens else it unsubscribes.
+		const unsubscribe = onValue(gameRef, (snapshot) => {
+			callback.onDataChanged(snapshot.val());
+		});
+		this.gameUnsubscribeMethod = unsubscribe;
+	}
 
-    private registerTeamListener(teamId: string, callback: FirebaseDataCallback<Team>) {
-        const db = getDatabase();
-        const teamRef = ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamId}`);
-        const unsubscribe = onValue(teamRef, (snapshot) => {
-            let team: Team = snapshot.val();
-            team.id = snapshot.key;
-            callback.onDataChanged(team);
-        });
-        this.teamUnsubscribeMethods[teamId] = unsubscribe;
-    }
+	onUserReady(callback: () => void) {
+		const unsubscribe = onAuthStateChanged(getAuth(), (userCredential) => {
+			if (userCredential) {
+				callback();
+				unsubscribe();
+			}
+		});
+	}
 
-    registerGameListener(gameId: string, callback: FirebaseDataCallback<Game>) {
-        const db = getDatabase();
-        const gameRef = ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}`);
-        this.gameUnsubscribeMethod; // This might be a function or null. If null nothing happens else it unsubscribes.
-        const unsubscribe = onValue(gameRef, (snapshot) => {
-            callback.onDataChanged(snapshot.val());
-        });
-        this.gameUnsubscribeMethod = unsubscribe;
-    }
+	async resetGameToWelcomeState(gameId: string) {
+		const db = getDatabase();
+		const updates: { [key: string]: any } = {};
 
-    onUserReady(callback: () => void) {
-        const unsubscribe = onAuthStateChanged(getAuth(), (userCredential) => {
-            if (userCredential) {
-                callback();
-                unsubscribe();
-            }
-        });
-    }
+		updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`] =
+			FirebaseConstants.GAME_STATE_WELCOME;
+		updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.START_TIMESTAMP}`] =
+			null;
+		updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.STOP_TIMESTAMP}`] =
+			null;
 
-    async resetGameToWelcomeState(gameId: string){
-        const db = getDatabase()
-        const updates: { [key: string]: any } = {}
+		await update(ref(db), updates);
+	}
 
-        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_WELCOME
-        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.START_TIMESTAMP}`] = null
-        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.STOP_TIMESTAMP}`] = null
+	async startGame(gameId: string) {
+		const db = getDatabase();
+		const updates: { [key: string]: any } = {};
 
+		updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`] =
+			FirebaseConstants.GAME_STATE_STARTED;
+		updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.START_TIMESTAMP}`] =
+			serverTimestamp();
 
-        await update(ref(db), updates)
-    }
+		await update(ref(db), updates);
+	}
 
-    async startGame(gameId: string) {
-        const db = getDatabase()
-        const updates: { [key: string]: any } = {}
+	async deactivateGame(gameId: string) {
+		const db = getDatabase();
+		await set(
+			ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`),
+			FirebaseConstants.GAME_STATE_DEACTIVATED
+		);
+	}
 
-        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_STARTED
-        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.START_TIMESTAMP}`] = serverTimestamp()
+	async stopGame(gameId: string) {
+		const db = getDatabase();
+		const updates: { [key: string]: any } = {};
 
-        await update(ref(db), updates)
-    }
+		updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`] =
+			FirebaseConstants.GAME_STATE_STOPPED;
+		updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.STOP_TIMESTAMP}`] =
+			serverTimestamp();
 
-    async deactivateGame(gameId: string){
-        const db = getDatabase()
-        await set(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`), FirebaseConstants.GAME_STATE_DEACTIVATED)
-    }
+		await update(ref(db), updates);
+	}
 
-    async stopGame(gameId: string) {
-        const db = getDatabase()
-        const updates: { [key: string]: any } = {}
+	async setGameStarted(gameId: string) {
+		const db = getDatabase();
+		await set(
+			ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`),
+			FirebaseConstants.GAME_STATE_STARTED
+		);
+	}
 
-        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`] = FirebaseConstants.GAME_STATE_STOPPED
-        updates[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.STOP_TIMESTAMP}`] = serverTimestamp()
+	async login(email: string, password: string): Promise<User> {
+		try {
+			const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
+			return { firebaseUserID: userCredential.user.uid };
+		} catch (error) {
+			console.error('Login failed:', error);
+			throw new NotValidCredentialsError('Credentials not found');
+			//TODO HAndle all them login errors
+			error = 'YOU COULD NOT LOGIN SORRY';
+		}
+	}
 
-        await update(ref(db), updates)
-    }
+	async logout(): Promise<void> {
+		try {
+			await signOut(getAuth());
+		} catch (error) {
+			console.error('Logout failed:', error);
+		}
+	}
 
-    async setGameStarted(gameId: string) {
-        const db = getDatabase()
-        await set(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`), FirebaseConstants.GAME_STATE_STARTED)
+	async registerNewTeam(
+		holdNavn: string,
+		email: string,
+		password: string,
+		bonusTime: number,
+		participants: number,
+		gameId: string
+	): Promise<void> {
+		const uidOfNewUser = await FirebaseUserAdder.createNewUser(holdNavn, email, password);
 
-    }
-
-
-    async login(email: string, password: string): Promise<User> {
-        try {
-            const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
-            return {firebaseUserID: userCredential.user.uid};
-        } catch (error) {
-            console.error('Login failed:', error);
-            throw new NotValidCredentialsError("Credentials not found")
-            //TODO HAndle all them login errors
-            error = "YOU COULD NOT LOGIN SORRY"
-        }
-    }
-
-    async logout(): Promise<void> {
-        try {
-            await signOut(getAuth());
-        } catch (error) {
-            console.error('Logout failed:', error);
-        }
-    }
-
-    async registerNewTeam(holdNavn: string, email: string, password: string, bonusTime: number, participants: number, gameId: string): Promise<void> {
-
-        const uidOfNewUser = await FirebaseUserAdder.createNewUser(holdNavn, email, password)
-
-        //fixme this is here to make sure firebase known who I am.
-        //  otherwise it will not work when write.
-        //  Fix this, it does not seem right
-        //  And might give us more issues in the future
-        /* await this.registerAuthCallback({
+		//fixme this is here to make sure firebase known who I am.
+		//  otherwise it will not work when write.
+		//  Fix this, it does not seem right
+		//  And might give us more issues in the future
+		/* await this.registerAuthCallback({
             onUnauthenticated(): void {
                 console.log("error")
             }, onUserLoggedIn(user: User): void {
@@ -309,288 +327,339 @@ export class FirebaseConnection {
             }
         }) */
 
-        const auth = getAuth(app);
-        const currentUser = auth.currentUser;
+		const auth = getAuth(app);
+		const currentUser = auth.currentUser;
 
-        // Check if the user is authenticated
-        if (!currentUser) {
-            console.error("User is not authenticated. Please log in.");
-            return;
-        }
+		// Check if the user is authenticated
+		if (!currentUser) {
+			console.error('User is not authenticated. Please log in.');
+			return;
+		}
 
-        await this.writeUserData(uidOfNewUser, holdNavn, password, email, bonusTime, participants, gameId);
+		await this.writeUserData(
+			uidOfNewUser,
+			holdNavn,
+			password,
+			email,
+			bonusTime,
+			participants,
+			gameId
+		);
+	}
 
-    }
+	async writeUserData(
+		uid: string,
+		holdNavn: string,
+		password: string,
+		email: string,
+		bonusTime: number,
+		participants: number,
+		gameId: string
+	) {
+		const db = getDatabase(app);
+		const teamData: TeamCreationData = {
+			username: holdNavn,
+			email: email,
+			bonusTime: bonusTime,
+			participants: participants,
+			password: password,
+			gameId: gameId
+		};
 
-    async writeUserData(uid: string, holdNavn: string, password: string, email: string, bonusTime: number, participants: number, gameId: string) {
-        const db = getDatabase(app);
-        const teamData: TeamCreationData = {
-            username: holdNavn,
-            email: email,
-            bonusTime: bonusTime,
-            participants: participants,
-            password: password,
-            gameId: gameId
-        }
+		const userUpdate: { [key: string]: unknown } = {};
+		userUpdate[`${FirebaseConstants.TEAMS_ROOT}/${uid}`] = teamData;
+		userUpdate[
+			`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAMES_TEAMS}/${uid}`
+		] = uid;
 
-        const userUpdate: { [key: string]: unknown } = {};
-        userUpdate[`${FirebaseConstants.TEAMS_ROOT}/${uid}`] = teamData;
-        userUpdate[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAMES_TEAMS}/${uid}`] = uid
+		await update(ref(db, `/`), userUpdate);
+	}
 
-        await update(ref(db, `/`), userUpdate);
-    }
+	async getTasks(gameId: string): Promise<{ [key: string]: Task }> {
+		const db = getDatabase();
+		const taskIdInGameRef = ref(
+			db,
+			`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_TASKS}`
+		);
+		const taskIdsInGameSnapshot = await get(taskIdInGameRef);
+		if (!taskIdsInGameSnapshot || !taskIdsInGameSnapshot.exists()) {
+			throw new Error('Task data fetch error');
+		}
+		const taskIdsInGame: string[] = Object.keys(taskIdsInGameSnapshot.val());
 
-    async getTasks(gameId: string): Promise<Task[]> {
-        const db = getDatabase();
-        const taskIdInGameRef = ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_TASKS}`)
-        const taskIdsInGameSnapshot = await get(taskIdInGameRef)
-        if (!taskIdsInGameSnapshot || !taskIdsInGameSnapshot.exists()) {
-            throw new Error('Task data fetch error');
-        }
-        const taskIdsInGame: string[] = Object.keys(taskIdsInGameSnapshot.val());
+		const allTasksSnapshot = await get(ref(db, FirebaseConstants.TASKS_ROOT));
+		if (!allTasksSnapshot || !allTasksSnapshot.exists()) {
+			throw new Error('Task data fetch error');
+		}
 
-        const snapshot = await get(ref(db, FirebaseConstants.TASKS_ROOT))
-        if (!snapshot || !snapshot.exists()) {
-            throw new Error('Task data fetch error');
-        }
+		const tasksToReturn: { [key: string]: Task } = {};
 
-        let tasksToReturn : Task[] = []
+		allTasksSnapshot.forEach((element) => {
+			if (taskIdsInGame.indexOf(element.key) !== -1) {
+				// Get the index where the id exists, when the id does not exist indexOf returns -1
+				tasksToReturn[element.key] = element.val();
+			}
+		});
 
-        snapshot.forEach(element => {
-            if (taskIdsInGame.indexOf(element.key) !== -1) { // Get the index where the id exists, when the id does not exist indexOf returns -1
-                tasksToReturn.push(element.val())
-            }
-        });
+		return tasksToReturn;
+	}
 
-        return tasksToReturn;
-    }
+	async writeTaskCompleted(taskId: string): Promise<Task> {
+		const auth = getAuth(app);
+		const currentUser = auth.currentUser;
 
+		// Check if the user is authenticated
+		if (!currentUser) {
+			console.error('User is not authenticated. Please log in.');
+			throw new AuthenticationError('User is not authenticated. Please log in.');
+		}
 
-    async writeTaskCompleted(taskId: string): Promise<Task> {
-        const auth = getAuth(app);
-        const currentUser = auth.currentUser;
+		// TODO: reenable check?
+		// if(await this.isTeamDead(currentUser.uid)) {
+		//     throw new TeamIsDeadError("You cannot complete more tasks because you have run out of time")
+		// }
 
-        // Check if the user is authenticated
-        if (!currentUser) {
-            console.error("User is not authenticated. Please log in.");
-            throw new AuthenticationError("User is not authenticated. Please log in.");
-        }
+		const db = getDatabase(app);
+		const taskSnapshot = await get(ref(db, `${FirebaseConstants.TASKS_ROOT}/${taskId}`));
+		if (!taskSnapshot || !taskSnapshot.exists()) {
+			console.error('This task does not exist in firebase');
+			throw new TaskNotFoundError('Task not found in firebase');
+		}
 
-        // TODO: reenable check?
-        // if(await this.isTeamDead(currentUser.uid)) {
-        //     throw new TeamIsDeadError("You cannot complete more tasks because you have run out of time")
-        // }
+		const gameIDSnapshot = await get(
+			ref(
+				db,
+				`${FirebaseConstants.TEAMS_ROOT}/${currentUser.uid}/${FirebaseConstants.TEAM_GAME_ID}`
+			)
+		);
+		if (!gameIDSnapshot || !gameIDSnapshot.exists()) {
+			console.error('This team has no game id in firebase');
+			throw new TeamGameIdNotFoundError('Id not found in firebase');
+		}
+		const gameId: String = gameIDSnapshot.val();
 
-        const db = getDatabase(app);
-        const taskSnapshot = await get(ref(db, `${FirebaseConstants.TASKS_ROOT}/${taskId}`))
-        if (!taskSnapshot || !taskSnapshot.exists()) {
-            console.error("This task does not exist in firebase")
-            throw new TaskNotFoundError("Task not found in firebase")
-        }
+		const gameStateSnapshot = await get(
+			ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`)
+		);
 
-        const gameIDSnapshot = await get(ref(db, `${FirebaseConstants.TEAMS_ROOT}/${currentUser.uid}/${FirebaseConstants.TEAM_GAME_ID}`))
-        if (!gameIDSnapshot || !gameIDSnapshot.exists()) {
-            console.error("This team has no game id in firebase")
-            throw new TeamGameIdNotFoundError("Id not found in firebase")
-        }
-        const gameId:String = gameIDSnapshot.val(); 
+		if (
+			!gameStateSnapshot.exists() ||
+			gameStateSnapshot.val() !== FirebaseConstants.GAME_STATE_STARTED
+		) {
+			console.error('The game is not started');
+			throw new GameNotStartedError('The game is not started');
+		}
 
-        const gameStateSnapshot = await get(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`))
+		const task: Task = taskSnapshot.val();
 
-        if (!gameStateSnapshot.exists() || gameStateSnapshot.val() !== FirebaseConstants.GAME_STATE_STARTED) {
-            console.error("The game is not started")
-            throw new GameNotStartedError("The game is not started")
-        }
+		const teamId = getAuth(app).currentUser?.uid;
 
-        const task: Task = taskSnapshot.val()
+		if (!teamId) {
+			console.error('Firebase error uknown: errorcode ostemads');
+			throw new Error('Firebase error uknown: errorcode ostemads');
+		} //fixme if this ever happens in reality we fix it for real. Otherwise we remote it as it is a theoprwetical mistake
 
-        const teamId = getAuth(app).currentUser?.uid
+		const multiplier = await FirebaseConnection.getInstance().then(async (instance) => {
+			return await instance.getGameMultiplier(gameId);
+		});
 
-        if (!teamId) {
-            console.error("Firebase error uknown: errorcode ostemads")
-            throw new Error("Firebase error uknown: errorcode ostemads")
-        } //fixme if this ever happens in reality we fix it for real. Otherwise we remote it as it is a theoprwetical mistake
+		const teamDatabaseBasePath = `${FirebaseConstants.TEAMS_ROOT}/${teamId}`;
 
-        const multiplier = await FirebaseConnection.getInstance().then(async (instance) => {
-            return await instance.getGameMultiplier(gameId)
-        })
+		const pathToCompletedTaskInTasks = `${teamDatabaseBasePath}/${FirebaseConstants.TEAM_TASKS}/${taskId}`;
+		const snapshotOfTask = await get(ref(db, pathToCompletedTaskInTasks));
+		if (snapshotOfTask.exists()) {
+			console.error('The team has already solved this task');
+			throw new AlreadySolvedTaskError('You have already solved this task');
+		}
 
-        const teamDatabaseBasePath = `${FirebaseConstants.TEAMS_ROOT}/${teamId}`
+		const lastCompletedTaskPath = `${teamDatabaseBasePath}/${FirebaseConstants.LAST_COMPLETED_TASK}`;
 
-        const pathToCompletedTaskInTasks = `${teamDatabaseBasePath}/${FirebaseConstants.TEAM_TASKS}/${taskId}`
-        const snapshotOfTask = await get(ref(db, pathToCompletedTaskInTasks))
-        if (snapshotOfTask.exists()) {
-            console.error("The team has already solved this task")
-            throw new AlreadySolvedTaskError("You have already solved this task")
-        }
+		const lastTaskSnapsHot = await get(ref(db, lastCompletedTaskPath));
+		const lastTask: TaskMarker = lastTaskSnapsHot.val();
 
-        const lastCompletedTaskPath = `${teamDatabaseBasePath}/${FirebaseConstants.LAST_COMPLETED_TASK}`
+		if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
+			throw new TwoOfTheSameLetterTaskInARowError('Your last tasks was this same letter');
+		}
 
-        const lastTaskSnapsHot = await get(ref(db, lastCompletedTaskPath))
-        const lastTask: TaskMarker = lastTaskSnapsHot.val()
+		const updates: { [key: string]: unknown } = {};
 
-     if (lastTaskSnapsHot.exists() && lastTask.letter === task.taskMarker.letter) {
-            throw new TwoOfTheSameLetterTaskInARowError("Your last tasks was this same letter")
-        }
+		updates[pathToCompletedTaskInTasks] = {
+			baseTime: task.baseTime,
+			multiplier: multiplier,
+			timeEarned: task.baseTime * multiplier,
+			taskMarker: task.taskMarker
+		};
 
-        const updates: { [key: string]: unknown } = {}
+		updates[lastCompletedTaskPath] = task.taskMarker;
 
-        updates[pathToCompletedTaskInTasks] = {
-            baseTime: task.baseTime,
-            multiplier: multiplier,
-            timeEarned: task.baseTime * multiplier,
-            taskMarker: task.taskMarker
-        }
+		await update(ref(db), updates);
+		return Promise.resolve(task);
+	}
 
-        updates[lastCompletedTaskPath] = task.taskMarker
+	async killAllListenersFromThisPage() {
+		for (const unsubscribe of this.unsubscribeMethodsFromListeners) {
+			unsubscribe();
+		}
 
-        await update(ref(db), updates)
-        return Promise.resolve(task)
-    }
+		for (const key in this.teamUnsubscribeMethods) {
+			const unsubscribe = this.teamUnsubscribeMethods[key];
+			unsubscribe();
+		}
 
+		this.gameUnsubscribeMethod?.();
+		this.unsubscribeMethodsFromListeners = [];
+	}
 
-    async killAllListenersFromThisPage() {
-        for (const unsubscribe of this.unsubscribeMethodsFromListeners) {
-            unsubscribe();
-        }
+	async getTeam(user: User): Promise<Team | false> {
+		const teamID = user.firebaseUserID;
 
-        for (const key in this.teamUnsubscribeMethods) {
-            const unsubscribe = this.teamUnsubscribeMethods[key];
-            unsubscribe()
-        }
+		const db = getDatabase(app);
+		const snapshot = await get(ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamID}`));
+		if (!snapshot || !snapshot.exists()) {
+			console.error('This team does not exist in firebase');
+			return false;
+		}
+		const team: Team = snapshot.val();
+		return team;
+	}
 
-        this.gameUnsubscribeMethod?.();
-        this.unsubscribeMethodsFromListeners = [];
-    }
+	async getAdmin(): Promise<Admin | false> {
+		const adminId = getAuth(app).currentUser.uid;
 
-    async getTeam(user: User): Promise<Team | false> {
-        const teamID = user.firebaseUserID;
+		const db = getDatabase(app);
+		const snapshot = await get(ref(db, `${FirebaseConstants.ADMIN_ROOT}/${adminId}`));
+		if (!snapshot || !snapshot.exists()) {
+			console.error('This team does not exist in firebase');
+			return false;
+		}
+		const admin: Admin = snapshot.val();
+		return admin;
+	}
 
-        const db = getDatabase(app);
-        const snapshot = await get(ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamID}`));
-        if (!snapshot || !snapshot.exists()) {
-            console.error("This team does not exist in firebase");
-            return false;
-        }
-        const team: Team = snapshot.val();
-        return team;
-    }
+	async createTask(letter: string, number: number, baseTime: number, gameId: string) {
+		const db = getDatabase(app);
+		const taskData: Task = {
+			baseTime: baseTime,
+			taskMarker: {
+				letter: letter,
+				number: number
+			}
+		};
+		// Create a new task reference with an auto-generated id
+		const taskListRef = ref(db, FirebaseConstants.TASKS_ROOT);
+		const newTaskRef = push(taskListRef);
+		await set(newTaskRef, taskData);
 
-    async getAdmin(): Promise<Admin | false> {
-        const adminId = getAuth(app).currentUser.uid;
+		// Add task id to game tasks
+		const gameRef = ref(
+			db,
+			`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_TASKS}/${newTaskRef.key}`
+		);
+		await set(gameRef, newTaskRef.key);
+	}
 
-        const db = getDatabase(app);
-        const snapshot = await get(ref(db, `${FirebaseConstants.ADMIN_ROOT}/${adminId}`));
-        if (!snapshot || !snapshot.exists()) {
-            console.error("This team does not exist in firebase");
-            return false;
-        }
-        const admin: Admin = snapshot.val();
-        return admin;
-    }
+	async isAdmin(): Promise<boolean> {
+		const uid = this.userState.uid;
 
-    async createTask(letter: string, number: number, baseTime: number, gameId: string) {
-        const db = getDatabase(app);
-        const taskData: Task = {
-            baseTime: baseTime,
-            taskMarker: {
-                letter: letter,
-                number: number
-            }
-        }
-        // Create a new task reference with an auto-generated id
-        const taskListRef = ref(db, FirebaseConstants.TASKS_ROOT);
-        const newTaskRef = push(taskListRef);
-        await set(newTaskRef, taskData);
+		const db = getDatabase();
+		return await get(ref(db, `${FirebaseConstants.ADMIN_ROOT}/${uid}`))
+			.then((snapshot) => {
+				return snapshot.exists();
+			})
+			.catch(() => {
+				return false;
+			});
+	}
 
-        // Add task id to game tasks
-        const gameRef = ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_TASKS}/${newTaskRef.key}`)
-        await set(gameRef, newTaskRef.key)
-    }
+	async getGameMultiplier(gameId: string) {
+		const db = getDatabase();
+		const snap = await get(
+			ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.MULTIPLIER}`)
+		);
+		return snap.val();
+	}
 
-    async isAdmin(): Promise<boolean> {
+	async setMultiplierValue(value: number, gameId: string) {
+		const db = getDatabase();
+		await set(
+			ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.MULTIPLIER}`),
+			value
+		);
+	}
 
-        const uid = this.userState.uid
+	async setTeamDead(userId: string): Promise<void> {
+		const db = getDatabase();
+		await set(
+			ref(db, `${FirebaseConstants.TEAMS_ROOT}/${userId}/${FirebaseConstants.DEATH_TIMESTAMP}`),
+			serverTimestamp()
+		);
+	}
 
-        const db = getDatabase()
-        return await get(ref(db, `${FirebaseConstants.ADMIN_ROOT}/${uid}`)).then((snapshot) => {
-            return snapshot.exists()
-        }).catch(() => {
-            return false
-        })
-    }
+	async isTeamDead(teamId: string): Promise<boolean> {
+		const db = getDatabase();
+		const snapshot = await get(
+			ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.DEATH_TIMESTAMP}`)
+		);
+		const isdead = snapshot.exists();
+		return Promise.resolve(isdead);
+	}
 
-    async getGameMultiplier(gameId:string) {
-        const db = getDatabase()
-        const snap = await get(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.MULTIPLIER}`))
-        return snap.val()
-    }
+	isLoggedIn(): boolean {
+		const auth = getAuth(app);
+		const currentUser = auth.currentUser;
 
-    async setMultiplierValue(value: number, gameId:string) {
-        const db = getDatabase()
-        await set(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.MULTIPLIER}`), value)
+		// Check if the user is authenticated
+		return currentUser !== null;
+	}
 
-    }
+	async getAdminDisplayName() {
+		const db = getDatabase();
+		const snapshot = await get(
+			ref(
+				db,
+				`${FirebaseConstants.ADMIN_ROOT}/${this.userState.uid}/${FirebaseConstants.DISPLAY_NAME}`
+			)
+		);
+		return snapshot.val();
+	}
 
-    async setTeamDead(userId: string): Promise<void> {
-        const db = getDatabase()
-        await set(ref(db, `${FirebaseConstants.TEAMS_ROOT}/${userId}/${FirebaseConstants.DEATH_TIMESTAMP}`), serverTimestamp())
-    }
+	// TODO: only kill teams that belong to game
+	async resetAllTeams(gameId: string): Promise<void> {
+		const db = getDatabase();
+		const allTeamsRef = ref(db, `${FirebaseConstants.TEAMS_ROOT}`);
 
-    async isTeamDead(teamId: string): Promise<boolean> {
-        const db = getDatabase()
-        const snapshot = await get(ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.DEATH_TIMESTAMP}`))
-        const isdead = snapshot.exists()
-        return Promise.resolve(isdead)
-    }
+		// Retrieve all teams in game
+		const teamsWithGameIdQueryRef = query(
+			allTeamsRef,
+			orderByChild(FirebaseConstants.TEAM_GAME_ID),
+			equalTo(gameId)
+		); // TODO: add indexOn Rules
+		const teamsWithGameIdSnapshot = await get(teamsWithGameIdQueryRef);
 
-    isLoggedIn(): boolean {
-        const auth = getAuth(app);
-        const currentUser = auth.currentUser;
+		console.log(teamsWithGameIdSnapshot.val());
 
-        // Check if the user is authenticated
-        return currentUser !== null
-    }
+		if (teamsWithGameIdSnapshot.exists()) {
+			const teams = teamsWithGameIdSnapshot.val();
 
-    async getAdminDisplayName(){
-        const db = getDatabase();
-        const snapshot = await get(ref(db, `${FirebaseConstants.ADMIN_ROOT}/${this.userState.uid}/${FirebaseConstants.DISPLAY_NAME}`));
-        return snapshot.val()
-    }
+			// Iterate over all teams and remove the DEATH_TIMESTAMP for the user
+			const promises = Object.keys(teams).map(async (teamId) => {
+				console.log(teamId);
+				const updates: { [key: string]: any } = {};
+				updates[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.DEATH_TIMESTAMP}`] =
+					null;
+				updates[
+					`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.LAST_COMPLETED_TASK}`
+				] = null;
+				updates[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.TEAM_TASKS}`] = null;
 
-    // TODO: only kill teams that belong to game    
-    async resetAllTeams(gameId: string): Promise<void> {
-        const db = getDatabase();
-        const allTeamsRef = ref(db, `${FirebaseConstants.TEAMS_ROOT}`)
-        
-        // Retrieve all teams in game
-        const teamsWithGameIdQueryRef = query(allTeamsRef, orderByChild(FirebaseConstants.TEAM_GAME_ID), equalTo(gameId)); // TODO: add indexOn Rules
-        const teamsWithGameIdSnapshot = await get(teamsWithGameIdQueryRef);
+				await update(ref(db), updates);
+			});
 
-        console.log(teamsWithGameIdSnapshot.val());
-        
-
-        if (teamsWithGameIdSnapshot.exists()) {
-            const teams = teamsWithGameIdSnapshot.val();
-
-            // Iterate over all teams and remove the DEATH_TIMESTAMP for the user
-            const promises = Object.keys(teams).map(async (teamId) => {
-                console.log(teamId)
-                const updates: { [key: string]: any } = {}
-                updates[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.DEATH_TIMESTAMP}`] = null
-                updates[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.LAST_COMPLETED_TASK}`] = null
-                updates[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.TEAM_TASKS}`] = null
-
-                await update(ref(db), updates)
-
-            });
-
-            // Wait for all removals to complete
-            await Promise.all(promises);
-            console.log(`Game data removed  in all teams`);
-        } else {
-            console.log("No teams found.");
-        }
-    }
-
+			// Wait for all removals to complete
+			await Promise.all(promises);
+			console.log(`Game data removed  in all teams`);
+		} else {
+			console.log('No teams found.');
+		}
+	}
 }
