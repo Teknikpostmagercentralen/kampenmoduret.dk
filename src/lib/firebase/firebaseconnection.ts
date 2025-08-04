@@ -23,6 +23,7 @@ import type {Admin} from '$lib/models/Admin';
 import {constants} from "../../gamecontants";
 import {updated} from "$app/stores";
 import {userState} from "../../stores/userstate";
+import type { S } from 'vitest/dist/reporters-yx5ZTtEV.js';
 
 export interface FirebaseDataCallback<T> {
     onDataChanged: (data: T) => void
@@ -331,7 +332,12 @@ export class FirebaseConnection {
             password: password,
             gameId: gameId
         }
-        await set(ref(db, `${FirebaseConstants.TEAMS_ROOT}/${uid}`), teamData);
+
+        const userUpdate: { [key: string]: unknown } = {};
+        userUpdate[`${FirebaseConstants.TEAMS_ROOT}/${uid}`] = teamData;
+        userUpdate[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAMES_TEAMS}/${uid}`] = uid
+
+        await update(ref(db, `/`), userUpdate);
     }
 
     async getTasks(gameId: string): Promise<Task[]> {
@@ -427,7 +433,7 @@ export class FirebaseConnection {
             throw new TwoOfTheSameLetterTaskInARowError("Your last tasks was this same letter")
         }
 
-        const updates: { [key: string]: any } = {}
+        const updates: { [key: string]: unknown } = {}
 
         updates[pathToCompletedTaskInTasks] = {
             baseTime: task.baseTime,
@@ -514,13 +520,13 @@ export class FirebaseConnection {
         })
     }
 
-    async getGameMultiplier(gameId:String) {
+    async getGameMultiplier(gameId:string) {
         const db = getDatabase()
         const snap = await get(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.MULTIPLIER}`))
         return snap.val()
     }
 
-    async setMultiplierValue(value: number, gameId:String) {
+    async setMultiplierValue(value: number, gameId:string) {
         const db = getDatabase()
         await set(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.MULTIPLIER}`), value)
 

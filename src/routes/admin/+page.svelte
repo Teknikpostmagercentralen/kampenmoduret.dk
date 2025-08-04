@@ -91,7 +91,7 @@
 				gameId = Object.keys(admin.games)[0];
 
 				// Get current multiplier value and update input field on page load
-				gameMultiplierInputFieldValue = instance.getGameMultiplier(gameId);
+				gameMultiplierInputFieldValue = await instance.getGameMultiplier(gameId);
 
 				instance.registerGameListener(gameId, {
 					onDataChanged: async (gameUpdate) => {
