@@ -12,7 +12,7 @@ import type {IdTokenResult, Unsubscribe, UserCredential} from 'firebase/auth';
 import {initializeApp} from 'firebase/app';
 import {getAuth} from 'firebase/auth';
 import type {User} from "../models/user";
-import {getDatabase, ref, set, child, remove, get, onValue, push, update, serverTimestamp, onChildAdded, onChildRemoved} from 'firebase/database';
+import {getDatabase, ref, set, child, remove, get, onValue, push, update, serverTimestamp, onChildAdded, onChildRemoved, query, equalTo, orderByChild} from 'firebase/database';
 import {FirebaseUserAdder} from "./firebaseUserAdder";
 import {FirebaseConstants} from "./firebaseConstants";
 import type {Task, TaskMarker} from "../models/task";
@@ -83,6 +83,13 @@ export class TaskNotFoundError extends TaskError {
         super(message, "TASK_NOT_FOUND_IN_FIREBASE")
     }
 }
+
+export class TeamGameIdNotFoundError extends TaskError {
+    constructor(message: string) {
+        super(message, "TEAMS_GAME_ID_NOT_FOUND_IN_FIREBASE")
+    }
+}
+
 export class GameNotStartedError extends TaskError {
 
     constructor(message: string) {
@@ -353,8 +360,7 @@ export class FirebaseConnection {
     }
 
 
-    // TODO: Fix game reference
-    async writeTaskCompleted(taskID: string): Promise<Task> {
+    async writeTaskCompleted(taskId: string): Promise<Task> {
         const auth = getAuth(app);
         const currentUser = auth.currentUser;
 
@@ -370,19 +376,27 @@ export class FirebaseConnection {
         // }
 
         const db = getDatabase(app);
-        const snapshot = await get(ref(db, `${FirebaseConstants.TASKS_ROOT}/${taskID}`))
-        if (!snapshot || !snapshot.exists()) {
+        const taskSnapshot = await get(ref(db, `${FirebaseConstants.TASKS_ROOT}/${taskId}`))
+        if (!taskSnapshot || !taskSnapshot.exists()) {
             console.error("This task does not exist in firebase")
             throw new TaskNotFoundError("Task not found in firebase")
         }
-        const gameSnapshot = await get(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.GAME_STATE}`))
 
-        if (!gameSnapshot.exists() || gameSnapshot.val() !== FirebaseConstants.GAME_STATE_STARTED) {
+        const gameIDSnapshot = await get(ref(db, `${FirebaseConstants.TEAMS_ROOT}/${currentUser.uid}/${FirebaseConstants.TEAM_GAME_ID}`))
+        if (!gameIDSnapshot || !gameIDSnapshot.exists()) {
+            console.error("This team has no game id in firebase")
+            throw new TeamGameIdNotFoundError("Id not found in firebase")
+        }
+        const gameId:String = gameIDSnapshot.val(); 
+
+        const gameStateSnapshot = await get(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_STATE}`))
+
+        if (!gameStateSnapshot.exists() || gameStateSnapshot.val() !== FirebaseConstants.GAME_STATE_STARTED) {
             console.error("The game is not started")
             throw new GameNotStartedError("The game is not started")
         }
 
-        const task: Task = snapshot.val()
+        const task: Task = taskSnapshot.val()
 
         const teamId = getAuth(app).currentUser?.uid
 
@@ -392,12 +406,12 @@ export class FirebaseConnection {
         } //fixme if this ever happens in reality we fix it for real. Otherwise we remote it as it is a theoprwetical mistake
 
         const multiplier = await FirebaseConnection.getInstance().then(async (instance) => {
-            return await instance.getGameMultiplier()
+            return await instance.getGameMultiplier(gameId)
         })
 
         const teamDatabaseBasePath = `${FirebaseConstants.TEAMS_ROOT}/${teamId}`
 
-        const pathToCompletedTaskInTasks = `${teamDatabaseBasePath}/${FirebaseConstants.TEAM_TASKS}/${taskID}`
+        const pathToCompletedTaskInTasks = `${teamDatabaseBasePath}/${FirebaseConstants.TEAM_TASKS}/${taskId}`
         const snapshotOfTask = await get(ref(db, pathToCompletedTaskInTasks))
         if (snapshotOfTask.exists()) {
             console.error("The team has already solved this task")
@@ -469,8 +483,7 @@ export class FirebaseConnection {
         return admin;
     }
 
-    // TODO: add to game tasks
-    async createTask(letter: string, number: number, baseTime: number) {
+    async createTask(letter: string, number: number, baseTime: number, gameId: string) {
         const db = getDatabase(app);
         const taskData: Task = {
             baseTime: baseTime,
@@ -483,6 +496,10 @@ export class FirebaseConnection {
         const taskListRef = ref(db, FirebaseConstants.TASKS_ROOT);
         const newTaskRef = push(taskListRef);
         await set(newTaskRef, taskData);
+
+        // Add task id to game tasks
+        const gameRef = ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_TASKS}/${newTaskRef.key}`)
+        await set(gameRef, newTaskRef.key)
     }
 
     async isAdmin(): Promise<boolean> {
@@ -497,17 +514,15 @@ export class FirebaseConnection {
         })
     }
 
-    // TODO: Fix game reference
-    async getGameMultiplier() {
+    async getGameMultiplier(gameId:String) {
         const db = getDatabase()
-        const snap = await get(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.MULTIPLIER}`))
+        const snap = await get(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.MULTIPLIER}`))
         return snap.val()
     }
 
-    // TODO: Fix game reference
-    async setMultiplierValue(value: number) {
+    async setMultiplierValue(value: number, gameId:String) {
         const db = getDatabase()
-        await set(ref(db, `${FirebaseConstants.GAME_ROOT}/${FirebaseConstants.MULTIPLIER}`), value)
+        await set(ref(db, `${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.MULTIPLIER}`), value)
 
     }
 
@@ -540,12 +555,17 @@ export class FirebaseConnection {
     // TODO: only kill teams that belong to game    
     async resetAllTeams(gameId: string): Promise<void> {
         const db = getDatabase();
-        const snapshot = await get(ref(db, `${FirebaseConstants.TEAMS_ROOT}`));
+        const allTeamsRef = ref(db, `${FirebaseConstants.TEAMS_ROOT}`)
+        
+        // Retrieve all teams in game
+        const teamsWithGameIdQueryRef = query(allTeamsRef, orderByChild(FirebaseConstants.TEAM_GAME_ID), equalTo(gameId)); // TODO: add indexOn Rules
+        const teamsWithGameIdSnapshot = await get(teamsWithGameIdQueryRef);
 
-        // Retrieve all teams
+        console.log(teamsWithGameIdSnapshot.val());
+        
 
-        if (snapshot.exists()) {
-            const teams = snapshot.val();
+        if (teamsWithGameIdSnapshot.exists()) {
+            const teams = teamsWithGameIdSnapshot.val();
 
             // Iterate over all teams and remove the DEATH_TIMESTAMP for the user
             const promises = Object.keys(teams).map(async (teamId) => {

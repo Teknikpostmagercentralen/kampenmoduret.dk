@@ -11,7 +11,9 @@
         if (browser) {
             FirebaseConnection.getInstance().then((instance)=>{
                 instance.onUserReady(async ()=>{
-                    await instance.createTask(letter, number, baseTime);
+                    const admin = await instance.getAdmin();
+				    const gameId = Object.keys(admin.games)[0];
+                    await instance.createTask(letter, number, baseTime, gameId);
                     goto('/admin');
                 });
             });

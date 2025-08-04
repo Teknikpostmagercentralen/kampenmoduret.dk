@@ -73,17 +73,11 @@
 	let gameId: string;
 
 	let gameMultiplierInputFieldValue: number;
-	// Get current multiplier value and update input field on page load
-	onMount(async () => {
-		gameMultiplierInputFieldValue = await FirebaseConnection.getInstance().then((instance) => {
-			return instance.getGameMultiplier();
-		});
-	});
 
 	// Function to handle saving new multiplier value
 	async function saveNewValue() {
 		await FirebaseConnection.getInstance().then(async (instance) => {
-			await instance.setMultiplierValue(gameMultiplierInputFieldValue);
+			await instance.setMultiplierValue(gameMultiplierInputFieldValue, gameId);
 		});
 	}
 
@@ -92,23 +86,27 @@
 		instance.registerUserListener({
 			onDataChanged: async (userUpdate) => {
 				user = userUpdate;
-                
-                const admin = await instance.getAdmin()
-                gameId = Object.keys(admin.games)[0];
-				
-                instance.registerGameListener(gameId, {
+
+				const admin = await instance.getAdmin();
+				gameId = Object.keys(admin.games)[0];
+
+				// Get current multiplier value and update input field on page load
+				gameMultiplierInputFieldValue = instance.getGameMultiplier(gameId);
+
+				instance.registerGameListener(gameId, {
 					onDataChanged: async (gameUpdate) => {
 						rawGameData.set(gameUpdate);
 					}
 				});
 
-                instance.registerTeamsListener(gameId, { // TODO: This really needs to be tested
+				instance.registerTeamsListener(gameId, {
+					// TODO: This really needs to be tested
 					onTeamChangedOrAdded: async (teamUpdate) => {
-                        $rawTeamData[teamUpdate.id] = teamUpdate
+						$rawTeamData[teamUpdate.id] = teamUpdate;
 						// Process and update the table data
 					},
 					onTeamRemovedFromGame: (removedTeamId) => {
-						delete $rawTeamData[removedTeamId] 
+						delete $rawTeamData[removedTeamId];
 					}
 				});
 				startUpdateTeamsLoop(); // start the timer to update teams
