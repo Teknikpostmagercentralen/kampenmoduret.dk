@@ -199,121 +199,133 @@
 		{/if}
 
 		<div class="box">
-			<h2 class="subtitle has-text-grey">Setting up the game</h2>
+			<h2 class="subtitle has-text-grey mb-4">Setting up the game</h2>
+
+			<!-- Task management -->
+			<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Task management</p>
 			<div class="buttons">
-				<button
-					class="button is-link"
-					on:click={() => {
-						goto('/admin/create-task');
-					}}
-					>Create new task
+				<button class="button is-link" on:click={() => goto('/admin/create-task')}>
+					<span class="icon"><i class="fas fa-plus"></i></span>
+					<span>Create new task</span>
 				</button>
 
-				<button
-					class="button is-link"
-					on:click={() => {
-						goto('/admin/register-team');
-					}}
-					>Add team
+				<button class="button is-link is-light" on:click={() => goto('/admin/register-team')}>
+					<span class="icon"><i class="fas fa-users"></i></span>
+					<span>Add team</span>
 				</button>
-				<button
-					class="button is-link"
-					on:click={() => {
-						goto('/admin/print/tasks');
-					}}
-					>Print tasks
+
+				<button class="button is-link is-light" on:click={() => goto('/admin/edit-teams')}>
+					<span class="icon"><i class="fas fa-edit"></i></span>
+					<span>Edit teams</span>
 				</button>
-				<button
-						class="button is-link"
-						on:click={() => {
-						goto('/admin/print/teams');
-					}}
-				>Print team QR codes
+			</div>
+
+			<!-- Print / Export -->
+			<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mt-5 mb-2">Print / export</p>
+			<div class="buttons">
+				<button class="button is-light" on:click={() => goto('/admin/print/tasks')}>
+					<span class="icon"><i class="fas fa-print"></i></span>
+					<span>Print tasks</span>
+				</button>
+
+				<button class="button is-light" on:click={() => goto('/admin/print/teams')}>
+					<span class="icon"><i class="fas fa-qrcode"></i></span>
+					<span>Print team QR codes</span>
 				</button>
 			</div>
 		</div>
 
+		
+		<!-- game controls -->
 		<div class="box">
-			<h2 class="subtitle has-text-grey">Game controls</h2>
+			<h2 class="subtitle has-text-grey mb-4">Game controls</h2>
+
+			<!-- Group 1: Starting phase -->
+			<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Phase control</p>
+			<div class="buttons mb-4">
+				<button
+						class="button is-dark"
+						on:click={async () => {
+				await confirmAction('start the game', async () => {
+					await FirebaseConnection.getInstance().then(async (instance) => {
+						if (gameId) await instance.startGame(gameId);
+					});
+				});
+			}}
+						disabled={$rawGameData.gameState !== GameState.WELCOME}
+				>
+					<span class="icon"><i class="fas fa-play"></i></span>
+					<span>Start game</span>
+				</button>
+
+				<button
+						class="button is-dark"
+						on:click={async () => {
+				await confirmAction('deactivate the game', async () => {
+					await FirebaseConnection.getInstance().then(async (instance) => {
+						if (gameId) await instance.deactivateGame(gameId);
+					});
+				});
+			}}
+						disabled={$rawGameData.gameState === GameState.DEACTIVATED || $rawGameData.gameState === GameState.STOPPED || $rawGameData.gameState === GameState.WELCOME}
+				>
+					<span class="icon"><i class="fas fa-power-off"></i></span>
+					<span>Deactivate</span>
+				</button>
+			</div>
+
+			<!-- Group 2: In-game state -->
+			<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Game state</p>
+			<div class="buttons mb-4">
+				<button
+						class="button is-dark"
+						on:click={async () => {
+				await confirmAction('activate the game', async () => {
+					await FirebaseConnection.getInstance().then(async (instance) => {
+						if (gameId) await instance.setGameStarted(gameId);
+					});
+				});
+			}}
+						disabled={$rawGameData.gameState === GameState.STARTED || $rawGameData.gameState === GameState.STOPPED || $rawGameData.gameState === GameState.WELCOME}
+				>
+					<span class="icon"><i class="fas fa-flag-checkered"></i></span>
+					<span>Activate</span>
+				</button>
+
+				<button
+						class="button is-dark"
+						on:click={async () => {
+				await confirmAction('stop the game', async () => {
+					await FirebaseConnection.getInstance().then(async (instance) => {
+						if (gameId) await instance.stopGame(gameId);
+					});
+				});
+			}}
+						disabled={$rawGameData.gameState === GameState.STOPPED || $rawGameData.gameState === GameState.WELCOME}
+				>
+					<span class="icon"><i class="fas fa-stop"></i></span>
+					<span>Stop</span>
+				</button>
+			</div>
+
+			<!-- Group 3: Danger zone -->
+			<p class="is-size-6 has-text-weight-semibold has-text-danger mb-2">Danger zone</p>
 			<div class="buttons">
 				<button
-					class="button is-dark"
-					on:click={async () => {
-						await confirmAction('start the game', async () => {
-							await FirebaseConnection.getInstance().then(async (instance) => {
-								if (gameId) {
-									await instance.startGame(gameId);
-								}
-							});
-						});
-					}}
-					disabled={$rawGameData.gameState !== GameState.WELCOME}
-					>START game
-				</button>
-
-				<button
-					class="button is-dark"
-					on:click={async () => {
-						await confirmAction('deactivate the game', async () => {
-							await FirebaseConnection.getInstance().then(async (instance) => {
-								if (gameId) {
-									await instance.deactivateGame(gameId);
-								}
-							});
-						});
-					}}
-					disabled={$rawGameData.gameState === GameState.DEACTIVATED ||
-						$rawGameData.gameState === GameState.STOPPED ||
-						$rawGameData.gameState === GameState.WELCOME}
-					>Deactivate Game
-				</button>
-
-				<button
-					class="button is-dark"
-					on:click={async () => {
-						await confirmAction('activate the game', async () => {
-							await FirebaseConnection.getInstance().then(async (instance) => {
-								if (gameId) {
-									await instance.setGameStarted(gameId);
-								}
-							});
-						});
-					}}
-					disabled={$rawGameData.gameState === GameState.STARTED ||
-						$rawGameData.gameState === GameState.STOPPED ||
-						$rawGameData.gameState === GameState.WELCOME}
-					>Activate Game
-				</button>
-
-				<button
-					class="button is-dark"
-					on:click={async () => {
-						await confirmAction('stop the game', async () => {
-							await FirebaseConnection.getInstance().then(async (instance) => {
-								if (gameId) {
-									await instance.stopGame(gameId);
-								}
-							});
-						});
-					}}
-					disabled={$rawGameData.gameState === GameState.STOPPED ||
-						$rawGameData.gameState === GameState.WELCOME}
-					>Stop Game
-				</button>
-
-				<button
-					class="button is-danger"
-					on:click={async () => {
-						await confirmAction('DELETE all data and RESET game', async () => {
-							await FirebaseConnection.getInstance().then(async (instance) => {
-								if (gameId) {
-									await instance.resetAllTeams(gameId);
-									await instance.resetGameToWelcomeState(gameId);
-								}
-							});
-						});
-					}}
-					>DELETE all data and RESET game
+						class="button is-danger"
+						on:click={async () => {
+				await confirmAction('DELETE all data and RESET game', async () => {
+					await FirebaseConnection.getInstance().then(async (instance) => {
+						if (gameId) {
+							await instance.resetAllTeams(gameId);
+							await instance.resetGameToWelcomeState(gameId);
+						}
+					});
+				});
+			}}
+				>
+					<span class="icon"><i class="fas fa-trash-alt"></i></span>
+					<span>Reset & delete all</span>
 				</button>
 			</div>
 		</div>
