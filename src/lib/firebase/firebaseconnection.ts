@@ -36,10 +36,8 @@ import type {CompletedTaskInTeams} from "../models/completed-task-in-teams";
 import type {Team, TeamCreationData} from '$lib/models/team';
 import type {Game} from '$lib/models/game';
 import type {Admin} from '$lib/models/admin';
-import {constants} from "../../gamecontants";
-import {updated} from "$app/stores";
-import {userState} from "../../stores/userstate";
-import type {S} from 'vitest/dist/reporters-yx5ZTtEV.js';
+import {FirebaseError} from 'firebase/app';
+import {LoginError} from "./login-error";
 
 export interface FirebaseDataCallback<T> {
     onDataChanged: (data: T) => void
@@ -310,9 +308,7 @@ export class FirebaseConnection {
             return {firebaseUserID: userCredential.user.uid};
         } catch (error) {
             console.error('Login failed:', error);
-            throw new NotValidCredentialsError('Credentials not found');
-            //TODO HAndle all them login errors
-            error = 'YOU COULD NOT LOGIN SORRY';
+            throw LoginError.toLoginError(error) //has a static conversion that handles converting from firebase errors automatically
         }
     }
 
@@ -323,6 +319,7 @@ export class FirebaseConnection {
             console.error('Logout failed:', error);
         }
     }
+
 
     async registerNewTeam(
         holdNavn: string,

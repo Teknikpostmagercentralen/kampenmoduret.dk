@@ -1,124 +1,119 @@
 <script lang="ts">
-	import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
-	import {NotValidCredentialsError} from '../../../lib/firebase/firebaseconnection';
-	import {goto} from '$app/navigation';
-	import type {UserState} from '../../../stores/userstate';
-	import {userState} from '../../../stores/userstate';
-	import {browser} from "$app/environment";
+    import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
+    import {goto} from '$app/navigation';
+    import {browser} from "$app/environment";
+    import {catalog} from '$lib/language';
+    import {LoginError, LoginErrorType} from "../../../lib/firebase/login-error";
+    import {doLogin} from "../../../lib/firebase/login";
 
 
-	let email: string = '';
-	let password: string = '';
-	let error: string | null = null;
+    let email: string = '';
+    let password: string = '';
+    let error: string | null = null;
 
 
-	if (browser) {
-		FirebaseConnection.getInstance().then(async (instance) => {
-			await instance.onUserReady(async () => {
-				const firebaseConnection = await FirebaseConnection.getInstance();
-				firebaseConnection.registerUserListener({onDataChanged:async (userUpdate) => {
-						const isAdmin = await firebaseConnection.isAdmin()
-						if (isAdmin) {
-							await goto("/admin")
-						} else {
-							await goto('/game');
+    if (browser) {
+        FirebaseConnection.getInstance().then(async (instance) => {
+            await instance.onUserReady(async () => {
+                const firebaseConnection = await FirebaseConnection.getInstance();
+                firebaseConnection.registerUserListener({
+                    onDataChanged: async (userUpdate) => {
+                        const isAdmin = await firebaseConnection.isAdmin()
+                        if (isAdmin) {
+                            await goto("/admin")
+                        } else {
+                            await goto('/game');
 
-						}
-					}});
-			});
-		});
-	}
+                        }
+                    }
+                });
+            });
+        });
+    }
 
-	async function handleLogin() {
-		try {
-			const firebaseConnection = await FirebaseConnection.getInstance();
-			const user = await firebaseConnection.login(email, password);
-			console.log(`Logged in ${user.firebaseUserID}`);
+    async function handleLogin() {
+        try {
 
-			await userState.update((state: UserState) => {
-				return {
-					...state,
-					loggedIn: true,
-					user: user
-				};
-			});
+            await doLogin(email, password)
 
+        } catch (e) {
 
+            if (e instanceof LoginError) {
+                switch (e.type) {
+                    case LoginErrorType.InvalidCredentials:
+                        error = catalog.login.errors.invalidCredentials;
+                        break;
+                    case LoginErrorType.UserNotFound:
+                        error = catalog.login.errors.userNotFound;
+                        break;
+                    case LoginErrorType.WrongPassword:
+                        error = catalog.login.errors.wrongPassword;
+                        break;
+                    case LoginErrorType.InvalidEmail:
+                        error = catalog.login.errors.invalidEmail;
+                        break;
+                    case LoginErrorType.UserDisabled:
+                        error = catalog.login.errors.userDisabled;
+                        break;
+                    case LoginErrorType.TooManyRequests:
+                        error = catalog.login.errors.tooManyRequests;
+                        break;
+                    case LoginErrorType.NetworkError:
+                        error = catalog.login.errors.networkError;
+                        break;
+                    default:
+                        error = catalog.login.errors.unknown;
+                }
+            }
 
-		} catch (e) {
-			if (e instanceof NotValidCredentialsError) {
-				console.log('Not valid credentials');
-				error = 'Invalid email or password. Please check your credentials and try again.';
-			} else if (e.code === 'auth/user-not-found') {
-				console.log('User not found');
-				error = 'No user found with this email address.';
-			} else if (e.code === 'auth/wrong-password') {
-				console.log('Wrong password');
-				error = 'The password you entered is incorrect.';
-			} else if (e.code === 'auth/invalid-email') {
-				console.log('Invalid email');
-				error = 'The email address is not properly formatted.';
-			} else if (e.code === 'auth/user-disabled') {
-				console.log('User account disabled');
-				error = 'This account has been disabled by an administrator.';
-			} else if (e.code === 'auth/too-many-requests') {
-				console.log('Too many requests');
-				error = 'We have blocked all requests from this device due to unusual activity. Please try again later.';
-			} else if (e.code === 'auth/network-request-failed') {
-				console.log('Network error');
-				error = 'A network error has occurred. Please check your connection and try again.';
-			} else {
-				console.error('An unknown error occurred:', e);
-				error = 'An unknown error occurred. Please try again later.';
-			}
-		}
-	}
+        }
+    }
 </script>
 
 <main>
-	<div class="login-container">
-		<h1 class="title">Login</h1>
-		<div class="field">
-			<label class="label" for="email">Email</label>
-			<div class="control">
-				<input
-					class="input"
-					type="email"
-					id="email"
-					bind:value={email}
-					placeholder="e.g. alex@example.com"
-				/>
-			</div>
-		</div>
-		<div class="field">
-			<label class="label" for="password">Password</label>
-			<div class="control">
-				<input
-					class="input"
-					type="password"
-					id="password"
-					bind:value={password}
-					placeholder="********"
-				/>
-			</div>
-		</div>
-		{#if error}
-			<div class="notification is-danger">
-				{error}
-			</div>
-		{/if}
-		<div class="field">
-			<div class="control">
-				<button class="button is-primary" on:click={handleLogin}>Login</button>
-			</div>
-		</div>
-	</div>
+    <div class="login-container">
+        <h1 class="title">Login</h1>
+        <div class="field">
+            <label class="label" for="email">Email</label>
+            <div class="control">
+                <input
+                        class="input"
+                        type="email"
+                        id="email"
+                        bind:value={email}
+                        placeholder="e.g. alex@example.com"
+                />
+            </div>
+        </div>
+        <div class="field">
+            <label class="label" for="password">Password</label>
+            <div class="control">
+                <input
+                        class="input"
+                        type="password"
+                        id="password"
+                        bind:value={password}
+                        placeholder="********"
+                />
+            </div>
+        </div>
+        {#if error}
+            <div class="notification is-danger">
+                {error}
+            </div>
+        {/if}
+        <div class="field">
+            <div class="control">
+                <button class="button is-primary" on:click={handleLogin}>Login</button>
+            </div>
+        </div>
+    </div>
 </main>
 
 <style>
-	.login-container {
-		max-width: 400px;
-		margin: 0 auto;
-		padding: 20px;
-	}
+    .login-container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
 </style>
