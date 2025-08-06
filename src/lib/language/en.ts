@@ -1,4 +1,7 @@
 export const catalog = {
+    button_texts: {
+        secret_logout_button: "⚠️️ This button will log you out of the game ⚠️️"
+    },
     login: {
         messages: {
             status_message_logging_you_in: "Logging you in",

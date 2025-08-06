@@ -9,6 +9,7 @@
     import {goto} from "$app/navigation";
     import {GameState} from "$lib/models/game-state.js";
     import {TimeFormatter} from "$lib/game/time-formatter.js";
+    import SecretButton from '$lib/components/SecretButton.svelte';
 
     let user: User;
     let timeLeft: number; // Set the starting time
@@ -84,6 +85,12 @@
         updateTimeLeft();
     }
 
+
+    function handleClick() {
+        goto('user/logout')
+
+    }
+
 </script>
 
 <main>
@@ -130,4 +137,5 @@
             <progress class="progress is-info is-two-thirds" max="100" style="width: 66%;"></progress>
         </div>
     {/if}
+    <SecretButton on:activate={handleClick} />
 </main>
