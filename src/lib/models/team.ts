@@ -23,6 +23,6 @@ export interface TeamWithTime extends Team {
 }
 
 
-export interface TeamCreationData extends Team {
+export interface TeamCreationData extends Omit<Team, 'id'> {
     password: string,
 }
