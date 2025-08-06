@@ -11,6 +11,7 @@
     let bonusTime: number;
     let participants: number;
     let error: string = ''
+    let counter = 0;
 
     function register() {
         if (browser) {
@@ -20,8 +21,9 @@
                 return;
             }
 
+            const usernamePostfix = counter === 0 ? '' : `_${counter.toString()}`; // no postfix if counter is zerp otherwise postfix will be _<counter>
             const password = generatePassword()
-            const username = encodeUsername(teamName)
+            const username = encodeUsername(teamName) + usernamePostfix
             const email = `${username}@kampenmoduret.dk`
 
             FirebaseConnection.getInstance().then((instance) => {
@@ -30,17 +32,21 @@
                     const gameId = Object.keys(admin.games)[0];
 
                     try{
-
                         await instance.registerNewTeam(teamName, email, password, bonusTime, participants, gameId);
                         const params = new URLSearchParams({username, password});
                         goto(`/admin/register-team/show-team-qr?${params.toString()}`);
 
                     } catch (e) {
+
+                        if(e instanceof RegistrationError && RegistrationErrorType.EmailAlreadyInUse) {
+                            counter++ // if username taken increment counter and try again this ensures that team anems can be renamed but username will then just be prefixed with a number like _9
+                            register()
+                            return
+                        }
+
                         if (e instanceof RegistrationError) {
                             switch (e.type) {
-                                case RegistrationErrorType.EmailAlreadyInUse:
-                                    error = catalog.registerTeam.errors.emailAlreadyInUse;
-                                    break;
+
                                 case RegistrationErrorType.InvalidEmail:
                                     error = catalog.registerTeam.errors.invalidEmail;
                                     break;

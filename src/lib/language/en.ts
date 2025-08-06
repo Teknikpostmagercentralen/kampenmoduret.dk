@@ -7,7 +7,6 @@ export const catalog = {
 
     registerTeam: {
         errors: {
-            emailAlreadyInUse: 'The Team Name was already taken, or is to similar to an existing team name, use another',
             invalidEmail: 'The username is not valid. Please check the format and try again.',
             operationNotAllowed: 'Email/password sign-up is not enabled. Please contact support.',
             weakPassword: 'The password is too weak. Please choose a stronger one and ensure it has more that six characters.',

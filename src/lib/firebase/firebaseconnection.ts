@@ -353,7 +353,7 @@ export class FirebaseConnection {
                 gameId
             );
         } catch (error) {
-            console.error('Team Registration failed:', error);
+            console.log('Firebase gave error on team registration:', error);
             throw RegistrationError.toRegistrationError(error) //has a static conversion that handles converting from firebase errors automatically
         }
 
