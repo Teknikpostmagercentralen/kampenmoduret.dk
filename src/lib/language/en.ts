@@ -5,6 +5,19 @@ export const catalog = {
         go_back_to_dashboard: 'Go Back to Dashboard'
     },
 
+    screens: {
+      deviceCheck: {
+          correctness_warning: 'Needs to be correct down to the last second',
+          intro_text: 'Please ensure your time is correct before logging into the game',
+          local_time: 'Local Time',
+          time_zone: 'Timezone',
+          end_warning: 'If the time is not correct on the device, it cannot be used for the game.',
+          utc_time: 'UTC time'
+
+      }
+
+    },
+
     registerTeam: {
         errors: {
             invalidEmail: 'The username is not valid. Please check the format and try again.',
