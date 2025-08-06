@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import type { Task } from '$lib/models/task';
-	import { FirebaseConnection } from '../../../lib/firebase/firebaseconnection';
+	import { FirebaseConnection } from '$lib/firebase/firebaseconnection';
 	import { ConfigConstants } from '$lib/config/config-constants';
 
 	let tasks: Task[];
@@ -28,10 +28,23 @@
 	}
 </script>
 
+<style>
+	@media print {
+		.no-print {
+			display: none !important;
+		}
+	}
+</style>
+
 <svelte:head>
 	<title>Task Printout</title>
 </svelte:head>
 <section class="section">
+	<div class="no-print mb-4">
+		<a href="/admin" class="button is-light">
+			← Back to dashboard
+		</a>
+	</div>
 	{#if tasks}
 		<div class="columns is-multiline">
 			<div class="column is-half">

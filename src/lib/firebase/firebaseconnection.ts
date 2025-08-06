@@ -135,6 +135,7 @@ export class AlreadySolvedTaskError extends TaskError {
     }
 }
 
+
 export class FirebaseConnection {
     private constructor() {
     }
@@ -637,8 +638,7 @@ export class FirebaseConnection {
         return snapshot.val();
     }
 
-    // TODO: only kill teams that belong to game
-    async resetAllTeams(gameId: string): Promise<void> {
+    async getAllTeamsInGame(gameId: string): Promise<{ [teamId: string]: Team }> {
         const db = getDatabase();
         const allTeamsRef = ref(db, `${FirebaseConstants.TEAMS_ROOT}`);
 
@@ -652,28 +652,35 @@ export class FirebaseConnection {
 
         console.log(teamsWithGameIdSnapshot.val());
 
-        if (teamsWithGameIdSnapshot.exists()) {
-            const teams = teamsWithGameIdSnapshot.val();
-
-            // Iterate over all teams and remove the DEATH_TIMESTAMP for the user
-            const promises = Object.keys(teams).map(async (teamId) => {
-                console.log(teamId);
-                const updates: { [key: string]: any } = {};
-                updates[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.DEATH_TIMESTAMP}`] =
-                    null;
-                updates[
-                    `${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.LAST_COMPLETED_TASK}`
-                    ] = null;
-                updates[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.TEAM_TASKS}`] = null;
-
-                await update(ref(db), updates);
-            });
-
-            // Wait for all removals to complete
-            await Promise.all(promises);
-            console.log(`Game data removed  in all teams`);
-        } else {
+        if (!teamsWithGameIdSnapshot.exists()) {
             console.log('No teams found.');
+            return {}
         }
+        return  teamsWithGameIdSnapshot.val();
     }
+
+    async resetAllTeams(gameId: string): Promise<void> {
+        const db = getDatabase();
+
+        const teams = await this.getAllTeamsInGame(gameId)
+
+        // Iterate over all teams and remove the DEATH_TIMESTAMP for the user
+        const promises = Object.keys(teams).map(async (teamId) => {
+            console.log(teamId);
+            const updates: { [key: string]: any } = {};
+            updates[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.DEATH_TIMESTAMP}`] =
+                null;
+            updates[
+                `${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.LAST_COMPLETED_TASK}`
+                ] = null;
+            updates[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.TEAM_TASKS}`] = null;
+
+            await update(ref(db), updates);
+        });
+
+        // Wait for all removals to complete
+        await Promise.all(promises);
+        console.log(`Game data removed  in all teams`);
+    }
+
 }

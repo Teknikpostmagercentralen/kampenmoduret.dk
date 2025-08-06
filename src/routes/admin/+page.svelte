@@ -199,7 +199,7 @@
 		{/if}
 
 		<div class="box">
-			<h2 class="subtitle has-text-grey">General controls</h2>
+			<h2 class="subtitle has-text-grey">Setting up the game</h2>
 			<div class="buttons">
 				<button
 					class="button is-link"
@@ -219,9 +219,16 @@
 				<button
 					class="button is-link"
 					on:click={() => {
-						goto('/admin/print-tasks');
+						goto('/admin/print/tasks');
 					}}
 					>Print tasks
+				</button>
+				<button
+						class="button is-link"
+						on:click={() => {
+						goto('/admin/print/teams');
+					}}
+				>Print team QR codes
 				</button>
 			</div>
 		</div>

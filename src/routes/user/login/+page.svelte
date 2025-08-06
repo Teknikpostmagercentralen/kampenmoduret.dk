@@ -40,7 +40,7 @@
                         error = catalog.login.errors.wrongPassword;
                         break;
                     case LoginErrorType.InvalidEmail:
-                        error = catalog.login.errors.invalidEmail;
+                        error = catalog.login.errors.invalidEmailUsername;
                         break;
                     case LoginErrorType.UserDisabled:
                         error = catalog.login.errors.userDisabled;
