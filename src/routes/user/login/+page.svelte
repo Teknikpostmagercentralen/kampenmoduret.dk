@@ -3,12 +3,12 @@
     import {goto} from '$app/navigation';
     import {browser} from "$app/environment";
     import {catalog} from '$lib/language';
-    import {LoginError, LoginErrorType} from "../../../lib/firebase/login-error";
+    import {LoginError, LoginErrorType} from "../../../lib/firebase/errors/login-error";
     import {
         doLoginWithEmailAndPassword,
         doLoginWithUsername,
         registerRedirectCallbackToHandleRedirectWhenLoginSuccessful
-    } from "../../../lib/firebase/login";
+    } from "../../../lib/firebase/login-page-utils";
 
 
     let password: string = '';

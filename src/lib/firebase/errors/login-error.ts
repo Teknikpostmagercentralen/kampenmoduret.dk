@@ -1,5 +1,5 @@
 import {FirebaseError} from "firebase/app";
-import {NotValidCredentialsError} from "./firebaseconnection";
+import {NotValidCredentialsError} from "../firebaseconnection";
 
 
 /*

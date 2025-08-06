@@ -37,7 +37,8 @@ import type {Team, TeamCreationData} from '$lib/models/team';
 import type {Game} from '$lib/models/game';
 import type {Admin} from '$lib/models/admin';
 import {FirebaseError} from 'firebase/app';
-import {LoginError} from "./login-error";
+import {LoginError} from "./errors/login-error";
+import {RegistrationError} from "./errors/register-error";
 
 export interface FirebaseDataCallback<T> {
     onDataChanged: (data: T) => void
@@ -329,38 +330,33 @@ export class FirebaseConnection {
         participants: number,
         gameId: string
     ): Promise<void> {
-        const uidOfNewUser = await FirebaseUserAdder.createNewUser(holdNavn, email, password);
 
-        //fixme this is here to make sure firebase known who I am.
-        //  otherwise it will not work when write.
-        //  Fix this, it does not seem right
-        //  And might give us more issues in the future
-        /* await this.registerAuthCallback({
-            onUnauthenticated(): void {
-                console.log("error")
-            }, onUserLoggedIn(user: User): void {
-                console.log(`user ${user.firebaseUserID}`)
+        try {
+            const uidOfNewUser = await FirebaseUserAdder.createNewUser(holdNavn, email, password);
+
+            const auth = getAuth(app);
+            const currentUser = auth.currentUser;
+
+            // Check if the user is authenticated
+            if (!currentUser) {
+                console.error('User is not authenticated. Please log in.');
+                return;
             }
-        }) */
 
-        const auth = getAuth(app);
-        const currentUser = auth.currentUser;
-
-        // Check if the user is authenticated
-        if (!currentUser) {
-            console.error('User is not authenticated. Please log in.');
-            return;
+            await this.writeUserData(
+                uidOfNewUser,
+                holdNavn,
+                password,
+                email,
+                bonusTime,
+                participants,
+                gameId
+            );
+        } catch (error) {
+            console.error('Team Registration failed:', error);
+            throw RegistrationError.toRegistrationError(error) //has a static conversion that handles converting from firebase errors automatically
         }
 
-        await this.writeUserData(
-            uidOfNewUser,
-            holdNavn,
-            password,
-            email,
-            bonusTime,
-            participants,
-            gameId
-        );
     }
 
     async writeUserData(

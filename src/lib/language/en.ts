@@ -1,6 +1,21 @@
 export const catalog = {
     button_texts: {
-        secret_logout_button: "⚠️️ This button will log you out of the game ⚠️️"
+        secret_logout_button: "⚠️️ This button will log you out of the game ⚠️️",
+        create_another_team_button_text: "Create another team",
+        go_back_to_dashboard: 'Go Back to Dashboard'
+    },
+
+    registerTeam: {
+        errors: {
+            emailAlreadyInUse: 'The Team Name was already taken, or is to similar to an existing team name, use another',
+            invalidEmail: 'The username is not valid. Please check the format and try again.',
+            operationNotAllowed: 'Email/password sign-up is not enabled. Please contact support.',
+            weakPassword: 'The password is too weak. Please choose a stronger one and ensure it has more that six characters.',
+            tooManyRequests: 'Too many attempts. Please wait a moment and try again.',
+            networkError: 'A network error occurred. Please check your connection and try again.',
+            unknown: 'An unexpected error occurred during registration. Please try again later.'
+        },
+        fields_not_filled: 'Please fill in a team name, bonus time, and number of participants.'
     },
     login: {
         messages: {

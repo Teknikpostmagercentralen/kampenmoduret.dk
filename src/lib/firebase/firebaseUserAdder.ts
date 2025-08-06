@@ -3,18 +3,6 @@ import type {FirebaseConfigProperties} from "./firebaseconnection";
 import {createUserWithEmailAndPassword, getAuth, updateProfile, } from "firebase/auth";
 import type {UserCredential} from "firebase/auth";
 
-
-/*const firebaseConfig: FirebaseConfigProperties = {
-    databaseURL: PUBLIC_FIREBASE_DATABASE_URL || "",
-    measurementId: PUBLIC_FIREBASE_MEASUREMENT_ID || "",
-    apiKey: PUBLIC_FIREBASE_API_KEY || "",
-    authDomain: PUBLIC_FIREBASE_AUTHDOMAIN || "",
-    projectId: PUBLIC_FIREBASE_PROJECT_ID || "",
-    storageBucket: PUBLIC_FIREBASE_STORAGE_BUCKET || "",
-    messagingSenderId: PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
-    appId: PUBLIC_FIREBASE_APP_ID || ""
-};*/
-
 const firebaseConfig = {
     apiKey: "AIzaSyBp6w5HC94OVbJvFLAV4aT28PtHO3NO5JA",
     authDomain: "kampen-mod-tiden.firebaseapp.com",

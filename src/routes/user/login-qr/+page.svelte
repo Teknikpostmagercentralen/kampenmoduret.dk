@@ -5,9 +5,9 @@
         doLoginWithEmailAndPassword,
         doLoginWithUsername,
         registerRedirectCallbackToHandleRedirectWhenLoginSuccessful
-    } from "../../../lib/firebase/login";
+    } from "../../../lib/firebase/login-page-utils";
     import {onMount} from "svelte";
-    import {LoginError, LoginErrorType} from "../../../lib/firebase/login-error";
+    import {LoginError, LoginErrorType} from "../../../lib/firebase/errors/login-error";
     import {browser} from "$app/environment";
     import {goto} from "$app/navigation";
     import {FirebaseConnection} from "../../../lib/firebase/firebaseconnection";

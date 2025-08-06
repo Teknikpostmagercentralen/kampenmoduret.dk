@@ -1,4 +1,4 @@
-import {LoginError} from "./login-error";
+import {LoginError} from "./errors/login-error";
 import {userState} from "../../stores/userstate";
 import type {UserState} from "../../stores/userstate";
 import {FirebaseConnection} from "./firebaseconnection";
@@ -6,9 +6,7 @@ import {goto} from "$app/navigation";
 
 
 export async function doLoginWithUsername(username: string, password: string) {
-
     await doLoginWithEmailAndPassword(`${username}@kampenmoduret.dk`, password)
-
 }
 
 export async function doLoginWithEmailAndPassword(email: string, password: string) {
@@ -33,9 +31,6 @@ export async function doLoginWithEmailAndPassword(email: string, password: strin
     }
 
 }
-
-
-//successful
 
 export function registerRedirectCallbackToHandleRedirectWhenLoginSuccessful(){
 
