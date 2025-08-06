@@ -6,13 +6,12 @@
     import {LoginError, LoginErrorType} from "../../../lib/firebase/login-error";
     import {
         doLoginWithEmailAndPassword,
-        doLoginWithUsername,
         registerRedirectCallbackToHandleRedirectWhenLoginSuccessful
     } from "../../../lib/firebase/login";
 
 
+    let email: string = '';
     let password: string = '';
-    let username: string = '';
     let error: string | null = null;
 
 
@@ -20,18 +19,17 @@
         registerRedirectCallbackToHandleRedirectWhenLoginSuccessful()
     }
 
-
     async function handleLogin() {
         try {
 
-            await doLoginWithUsername(username, password)
+            await doLoginWithEmailAndPassword(email, password)
 
         } catch (e) {
 
             if (e instanceof LoginError) {
                 switch (e.type) {
                     case LoginErrorType.InvalidCredentials:
-                        error = catalog.login.errors.invalidCredentialsUsername;
+                        error = catalog.login.errors.invalidCredentials;
                         break;
                     case LoginErrorType.UserNotFound:
                         error = catalog.login.errors.userNotFound;
@@ -64,14 +62,14 @@
     <div class="login-container">
         <h1 class="title">Login</h1>
         <div class="field">
-            <label class="label" for="username">Username</label>
+            <label class="label" for="email">Email</label>
             <div class="control">
                 <input
                         class="input"
-                        type="text"
-                        id="username"
-                        bind:value={username}
-                        placeholder={catalog.login.username_example_text}
+                        type="email"
+                        id="email"
+                        bind:value={email}
+                        placeholder="e.g. alex@example.com"
                 />
             </div>
         </div>
@@ -92,14 +90,6 @@
                 {error}
             </div>
         {/if}
-
-
-        <div class="has-text-centered mt-3">
-            <a class="is-size-6 has-text-grey" href="/user/login-admin">
-                {catalog.login.adminLinkText}
-            </a>
-        </div>
-
         <div class="field">
             <div class="control">
                 <button class="button is-primary" on:click={handleLogin}>Login</button>
