@@ -235,7 +235,7 @@
 			</div>
 		</div>
 
-		
+
 		<!-- game controls -->
 		<div class="box">
 			<h2 class="subtitle has-text-grey mb-4">Game controls</h2>

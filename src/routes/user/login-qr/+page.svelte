@@ -80,7 +80,7 @@
         <section
                 class="hero is-fullheight is-flex is-justify-content-center is-align-items-center has-background-danger"
         >
-            <p class="title is-size-3-mobile is-size-2-tablet has-text-white has-text-centered">
+            <p class="title is-size-3-mobile is-size-2-tablet has-text-white has-text-centered p-4">
                 {error}
             </p>
         </section>

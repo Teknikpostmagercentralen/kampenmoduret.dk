@@ -20,7 +20,8 @@
 
     function generateLoginUrl(team: Team): string {
         const baseURL = ConfigConstants.getURL();
-        return `${baseURL}/user/login-qr?username=${encodeURIComponent(team.username)}&password=${encodeURIComponent(team.password)}`;
+        const username = stripAfterAt(team.email)
+        return `${baseURL}/user/login-qr?username=${encodeURIComponent(username)}&password=${encodeURIComponent(team.password)}`;
 
 
     }
