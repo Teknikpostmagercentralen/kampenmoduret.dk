@@ -19,6 +19,7 @@
     import {TeamTicker} from '$lib/game/teamTicker';
     import {gameDataForAdmin} from "$lib/stores/gameDataForAdmin";
     import {teamDataForAdmin} from "$lib/stores/teamDataForAdmin";
+    import {catalog} from "$lib/language/index.js";
 
     let tickerTimer: ReturnType<typeof setTimeout>;
 
@@ -161,31 +162,28 @@
                     href="#"
                     on:click={() => {
 					goto('/user/logout');
-				}}>Logout</a
+				}}>{catalog.admin.links.log_out}</a
             >
         </div>
 
         {#if displayName}
-            <h1 class="title has-text-grey">Hello {displayName}</h1>
+            <h1 class="title has-text-grey">{catalog.admin.headings.greeting} {displayName}</h1>
         {/if}
 
-        <div class="box">
-            <h2 class="subtitle has-text-grey mb-4">Setting up the game</h2>
-
             <div class="box">
-                <h2 class="subtitle has-text-grey mb-4">Setting up the game</h2>
+                <h2 class="subtitle has-text-grey mb-4">{catalog.admin.headings.setting_up}</h2>
 
                 <!-- Task management -->
                 <p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Task management</p>
                 <div class="buttons">
                     <button class="button is-link" on:click={() => goto('/admin/create-task')}>
                         <span class="icon"><i class="fas fa-plus"></i></span>
-                        <span>Add task</span>
+                        <span>{catalog.admin.buttons.add_tasks}</span>
                     </button>
 
                     <button class="button is-link is-light" on:click={() => goto('/admin/edit-tasks')}>
                         <span class="icon"><i class="fas fa-edit"></i></span>
-                        <span>Edit tasks</span>
+                        <span>{catalog.admin.buttons.edit_tasks}</span>
                     </button>
                 </div>
 
@@ -194,12 +192,12 @@
                 <div class="buttons">
                     <button class="button is-link is-light" on:click={() => goto('/admin/register-team')}>
                         <span class="icon"><i class="fas fa-users"></i></span>
-                        <span>Add team</span>
+                        <span>{catalog.admin.buttons.add_team}</span>
                     </button>
 
                     <button class="button is-link is-light" on:click={() => goto('/admin/edit-teams')}>
                         <span class="icon"><i class="fas fa-edit"></i></span>
-                        <span>Edit teams</span>
+                        <span>{catalog.admin.buttons.edit_teams}</span>
                     </button>
                 </div>
 
@@ -208,22 +206,22 @@
                 <div class="buttons">
                     <button class="button is-light" on:click={() => goto('/admin/print/tasks')}>
                         <span class="icon"><i class="fas fa-print"></i></span>
-                        <span>Print tasks</span>
+                        <span>{catalog.admin.buttons.print_tasks}</span>
                     </button>
 
                     <button class="button is-light" on:click={() => goto('/admin/print/teams')}>
                         <span class="icon"><i class="fas fa-qrcode"></i></span>
-                        <span>Print team QR codes</span>
+                        <span>{catalog.admin.buttons.print_qr_button_text}</span>
                     </button>
                 </div>
             </div>
 
             <!-- game controls -->
             <div class="box">
-                <h2 class="subtitle has-text-grey mb-4">Game controls</h2>
+                <h2 class="subtitle has-text-grey mb-4">{catalog.admin.headings.game_control}</h2>
 
                 <!-- Group 1: Starting phase -->
-                <p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Phase control</p>
+                <p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">{catalog.admin.headings.phase_control}</p>
                 <div class="buttons mb-4">
                     <button
                             class="button is-dark"
@@ -241,12 +239,12 @@
                             disabled={$gameDataForAdmin.gameState !== GameState.WELCOME}
                     >
                         <span class="icon"><i class="fas fa-play"></i></span>
-                        <span>Start game</span>
+                        <span>{catalog.admin.buttons.start}</span>
                     </button>
                 </div>
 
                 <!-- Group 2: In-game state -->
-                <p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Game state</p>
+                <p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">{catalog.admin.headings.game_state}</p>
                 <div class="buttons mb-4">
                     <button
                             class="button is-dark"
@@ -260,7 +258,7 @@
                             disabled={$gameDataForAdmin.gameState === GameState.STARTED || $gameDataForAdmin.gameState === GameState.STOPPED || $gameDataForAdmin.gameState === GameState.WELCOME}
                     >
                         <span class="icon"><i class="fas fa-flag-checkered"></i></span>
-                        <span>Activate</span>
+                        <span>{catalog.admin.buttons.activate}</span>
                     </button>
 
 
@@ -276,12 +274,12 @@
                             disabled={$gameDataForAdmin.gameState === GameState.DEACTIVATED || $gameDataForAdmin.gameState === GameState.STOPPED || $gameDataForAdmin.gameState === GameState.WELCOME}
                     >
                         <span class="icon"><i class="fas fa-power-off"></i></span>
-                        <span>Deactivate</span>
+                        <span>{catalog.admin.buttons.deactivate}</span>
                     </button>
                 </div>
 
                 <!-- Group 3: Danger zone -->
-                <p class="is-size-6 has-text-weight-semibold has-text-danger mb-2">Danger zone</p>
+                <p class="is-size-6 has-text-weight-semibold has-text-danger mb-2">{catalog.admin.headings.danger}</p>
                 <div class="buttons">
 
                     <button
@@ -297,7 +295,7 @@
                             disabled={$gameDataForAdmin.gameState === GameState.STOPPED || $gameDataForAdmin.gameState === GameState.WELCOME}
                     >
                         <span class="icon"><i class="fas fa-stop"></i></span>
-                        <span>Stop</span>
+                        <span>{catalog.admin.buttons.stop}</span>
                     </button>
 
                     <button
@@ -316,23 +314,23 @@
 
                     >
                         <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                        <span>Reset the game & delete all progress for teams</span>
+                        <span>{catalog.admin.buttons.reset}</span>
                     </button>
                 </div>
             </div>
 
             <div class="box">
-                <h2 class="subtitle has-text-grey">Team score overall</h2>
+                <h2 class="subtitle has-text-grey">{catalog.admin.headings.team_score}</h2>
 
                 <div class="table-container">
                     <table class="table is-striped is-hoverable is-fullwidth">
                         <thead>
                         <tr class="has-background-grey-lighter">
-                            <th class="has-text-grey-dark">Name</th>
-                            <th class="has-text-grey-dark">Time Left</th>
-                            <th class="has-text-grey-dark">Seconds Earned</th>
-                            <th class="has-text-grey-dark">Nr Participants</th>
-                            <th class="has-text-grey-dark">Last Task</th>
+                            <th class="has-text-grey-dark">{catalog.admin.table.name}</th>
+                            <th class="has-text-grey-dark">{catalog.admin.table.time_left}</th>
+                            <th class="has-text-grey-dark">{catalog.admin.table.seconds_earned}</th>
+                            <th class="has-text-grey-dark">{catalog.admin.table.nr_of_participants}</th>
+                            <th class="has-text-grey-dark">{catalog.admin.table.last_task}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -363,26 +361,26 @@
                     </table>
                 </div>
                 <div class="box">
-                    <h2 class="subtitle has-text-grey">Edit the Value</h2>
+                    <h2 class="subtitle has-text-grey">{catalog.admin.buttons.edit_multiplier_button}</h2>
                     <div class="field">
-                        <label class="label has-text-grey-dark">Edit the Value</label>
+                        <label class="label has-text-grey-dark">{catalog.admin.headings.edit_the_value}</label>
                         <div class="control">
                             <input
                                     class="input"
                                     type="number"
                                     bind:value={gameMultiplierInputFieldValue}
-                                    placeholder="Enter new value"
+                                    placeholder={catalog.admin.strings.multiplier_new_value_placeholder}
                             />
                         </div>
                     </div>
 
                     <p class="has-text-grey-dark mt-5 mb-5">
-                        Whole and decimal numbers supported. For example, 1 or 5 or 1.6
+                        {catalog.admin.strings.multiplier_help_text}
                     </p>
 
                     <div class="control">
                         <button class="button has-background-primary has-text-white" on:click={saveNewValue}
-                        >Save
+                        >{catalog.admin.buttons.multiplier_save}
                         </button
                         >
                     </div>

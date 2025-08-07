@@ -1,10 +1,57 @@
 export const catalog = {
-    button_texts: {
-        secret_logout_button: "⚠️️ This button will log you out of the game ⚠️️",
+    general_button_texts: {
         create_another_team_button_text: "Create another team",
         go_back_to_dashboard: 'Go Back to Dashboard'
     },
+    game: {
+        buttons: {
+            secret_logout_button: "⚠️️ This button will log you out of the game ⚠️️",
+        }
+    },
+    admin: {
+        headings: {
+            game_control: 'Game controls',
+            danger: 'Danger zone',
+            game_state: 'Game state',
+            phase_control: 'Phase control',
+            setting_up: 'Setting up the game',
+            greeting: 'Hello',
+            team_score: 'Team score overall',
+            edit_the_value: 'Edit the Value'
+        },
+        strings: {
+            multiplier_new_value_placeholder: 'Enter new value',
+            multiplier_help_text: '                        Whole and decimal numbers supported. For example, 1 or 5 or 1.6'
 
+        },
+        table: {
+          name: 'Name',
+          time_left: 'Time Left',
+            seconds_earned: 'Seconds Earned',
+            nr_of_participants: 'Nr Participants',
+            last_task: 'Last Task',
+
+        },
+        buttons: {
+            stop: 'Stop the game',
+            reset: 'Reset the game & delete all progress for teams',
+            start: 'Start the game',
+            activate: 'Activate the game',
+            deactivate: 'Deactivate the game',
+            print_qr_button_text: 'Print team QR codes',
+            print_tasks: 'Print tasks',
+            edit_teams: 'Edit teams',
+            add_team: 'Add team',
+            edit_tasks: 'Edit tasks',
+            add_tasks: 'Add task',
+            edit_multiplier_button: 'Edit the Value',
+            multiplier_save: 'Save',
+
+        },
+        links: {
+          log_out: 'Logout'
+        },
+    },
     screens: {
         printTeamsLogin: {
             beforeScanning: "Before scanning the login QR codes, it is important that each team scans the QR code on the right. It shows a screen with the current time. Check that all phones display the same time.",

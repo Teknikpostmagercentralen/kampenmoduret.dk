@@ -74,6 +74,6 @@
       clearTimeout(hideTimer);
     }}
     >
-        {catalog.button_texts.secret_logout_button}️
+        {catalog.game.buttons.secret_logout_button}️
     </button>
 {/if}

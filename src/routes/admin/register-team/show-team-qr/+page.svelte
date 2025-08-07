@@ -75,10 +75,10 @@
             </figure>
             <div class="buttons-container">
                 <button class="button is-link" on:click={goBackToDashboard}>
-                    {catalog.button_texts.go_back_to_dashboard}
+                    {catalog.general_button_texts.go_back_to_dashboard}
                 </button>
                 <button class="button is-primary" on:click={createAnother}>
-                    {catalog.button_texts.create_another_team_button_text}
+                    {catalog.general_button_texts.create_another_team_button_text}
                 </button>
             </div>
         {/if}

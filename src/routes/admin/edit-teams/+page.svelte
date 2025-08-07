@@ -117,7 +117,7 @@
 <section class="section">
     <div class="no-print mb-4">
         <a href="/admin" class="button is-light">
-            ← {catalog.button_texts.go_back_to_dashboard}
+            ← {catalog.general_button_texts.go_back_to_dashboard}
         </a>
     </div>
     <h1 class="title is-3">Manage Teams</h1>

@@ -56,7 +56,7 @@
 
 <section class="section">
     <div class="no-print mb-4">
-        <a href="/admin" class="button is-light">← {catalog.button_texts.go_back_to_dashboard}</a>
+        <a href="/admin" class="button is-light">← {catalog.general_button_texts.go_back_to_dashboard}</a>
     </div>
 
     {#if loading}
