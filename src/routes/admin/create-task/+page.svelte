@@ -62,7 +62,7 @@
                 </div>
             </div>
             <div class="field">
-                <label class="label">Base Time</label>
+                <label class="label">Base Time (in seconds)</label>
                 <div class="control">
                     <input
                             type="number"

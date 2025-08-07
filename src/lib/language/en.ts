@@ -57,10 +57,10 @@ export const catalog = {
             beforeScanning: "Before scanning the login QR codes, it is important that each team scans the QR code on the right. It shows a screen with the current time. Check that all phones display the same time.",
             timeWarning: "If one phone does not show the correct time, DO NOT LOG IT IN.",
             gameRisk: "This can break the game for the entire team.",
-            qrExplanation: "Each group receives a QR code they can scan to log in.",
+            qrExplanation: "Each team has a QR code below they can scan to log in.",
             fallbackInfo: "Username and password are also shown in case scanning doesn’t work.",
-            qrSecurity: "Make sure not to scan another group’s QR code.",
-            autoLoginWarning: "Scanning logs you in automatically, so it’s important that each group uses their own!",
+            qrSecurity: "Make they do not scan another teams’s QR code.",
+            autoLoginWarning: "Scanning logs them in automatically",
             headlineInfo: 'Information before the game begins'
         },
         deviceCheck: {
