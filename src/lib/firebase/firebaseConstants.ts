@@ -20,6 +20,8 @@ export class FirebaseConstants {
     static GAME_STATE_DEACTIVATED: string = "game_deactivated";
     static GAME_STATE_STOPPED: string = "game_stopped";
     static GAME_STATE_STARTED: string = "game_started";
+    static TEAM_PARTICIPANTS: string = "participants";
+    static TEAM_BONUSTIME: string = "bonusTime";
 
 
 

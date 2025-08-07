@@ -322,7 +322,6 @@ export class FirebaseConnection {
         }
     }
 
-
     async registerNewTeam(
         holdNavn: string,
         email: string,
@@ -360,6 +359,7 @@ export class FirebaseConnection {
 
     }
 
+
     async writeUserData(
         uid: string,
         holdNavn: string,
@@ -386,6 +386,70 @@ export class FirebaseConnection {
             ] = uid;
 
         await update(ref(db, `/`), userUpdate);
+    }
+
+    async updateTeamFields(
+        gameId: string,
+        teamId: string,
+        fields: {
+            participants?: number;
+            bonusTime?: number;
+        }
+    ): Promise<void> {
+        try {
+
+            if (Object.keys(fields).length === 0) {
+                console.warn('No valid fields provided to update');
+                return;
+            }
+
+            const db = getDatabase(app);
+
+            const userUpdate: { [key: string]: unknown } = {};
+
+            if (typeof fields.participants === 'number') {
+                userUpdate[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.TEAM_PARTICIPANTS}`] = fields.participants;
+
+            }
+
+            if (typeof fields.bonusTime === 'number') {
+                userUpdate[`${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.TEAM_BONUSTIME}`] = fields.bonusTime;
+            }
+
+
+            await update(ref(db, `/`), userUpdate);
+
+            // Optionally: check if result is OK (e.g., with Firestore write result)
+        } catch (error) {
+            console.error('Failed to update team fields', error);
+            throw new TaskError("Could not update team", "Team_update_failed"); // So frontend can catch it and show toast
+        }
+    }
+
+    async removeTeamFromGameAndDeleteTeam(gameId: string, teamId: string) {
+
+        const db = getDatabase(app)
+        const teamRef = ref(db, `/${FirebaseConstants.TEAMS_ROOT}/${teamId}`)
+        const teamSnapshot = await get(teamRef)
+        const team: TeamCreationData = teamSnapshot.val()
+
+        try {
+            await FirebaseUserAdder.deleteUser(team.email, team.password)
+
+            const teamDeletionData: { [key: string]: null } = {};
+            teamDeletionData[`${FirebaseConstants.TEAMS_ROOT}/${teamId}`] = null;
+            teamDeletionData[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAMES_TEAMS}/${teamId}`] = null;
+
+            await update(ref(db, `/`), teamDeletionData);
+
+
+        } catch (e) {
+
+            throw new TaskError("Could not delete team", "Deletion_failed")
+
+        }
+
+
     }
 
     async getTasks(gameId: string): Promise<{ [key: string]: Task }> {
@@ -573,6 +637,7 @@ export class FirebaseConnection {
         await set(gameRef, newTaskRef.key);
     }
 
+
     async isAdmin(): Promise<boolean> {
         const uid = this.userState.uid;
 
@@ -613,9 +678,11 @@ export class FirebaseConnection {
     async isTeamDead(teamId: string): Promise<boolean> {
         const db = getDatabase();
         const snapshot = await get(
-            ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamId}/${FirebaseConstants.DEATH_TIMESTAMP}`)
+            ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamId}`)
         );
-        const isdead = snapshot.exists();
+        if(!snapshot.exists()) return Promise.resolve(true); // if team is deleted we count is as dead. to not mark deleted teams with nbo data as dead later. Otherwise we get "thost teams" with only the detah timestamp but to data. If we only look at death timestamp it would not be there even for teams that was just deleted
+
+        const isdead = snapshot.child(`${FirebaseConstants.DEATH_TIMESTAMP}`).exists()
         return Promise.resolve(isdead);
     }
 
@@ -656,7 +723,7 @@ export class FirebaseConnection {
             console.log('No teams found.');
             return {}
         }
-        return  teamsWithGameIdSnapshot.val();
+        return teamsWithGameIdSnapshot.val();
     }
 
     async resetAllTeams(gameId: string): Promise<void> {

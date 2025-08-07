@@ -1,6 +1,12 @@
 import {initializeApp} from "firebase/app";
 import type {FirebaseConfigProperties} from "./firebaseconnection";
-import {createUserWithEmailAndPassword, getAuth, updateProfile, } from "firebase/auth";
+import {
+    createUserWithEmailAndPassword,
+    getAuth,
+    updateProfile,
+    deleteUser,
+    signInWithEmailAndPassword
+} from "firebase/auth";
 import type {UserCredential} from "firebase/auth";
 
 const firebaseConfig = {
@@ -15,7 +21,19 @@ const firebaseConfig = {
 };
 
 
-type UserAddedCallback = (userCredential: UserCredential)=> void
+type UserAddedCallback = (userCredential: UserCredential) => void
+
+class DeleteUserError implements Error {
+    private code: string;
+
+    constructor(code: string, message: string) {
+        this.message = message
+        this.code = code
+    }
+
+    message: string = "Could not delete user"
+    name: string = "DELETE_FAILED"
+}
 
 export class FirebaseUserAdder {
 
@@ -23,12 +41,44 @@ export class FirebaseUserAdder {
 
     static auth = getAuth(FirebaseUserAdder.app)
 
-
     static async createNewUser(holdNavn: string, email: string, password: string): Promise<string> {
         return await createUserWithEmailAndPassword(FirebaseUserAdder.auth, email, password).then(async (userCredential) => {
             await updateProfile(userCredential.user, {displayName: holdNavn});
             return userCredential.user.uid
         })
+    }
+
+    static async deleteUser(email: string, password: string): Promise<boolean> {
+
+        const auth = getAuth(FirebaseUserAdder.app);
+        console.log(email)
+
+        return await signInWithEmailAndPassword(auth, email, password)
+            .then(async (userCredential) => {
+                // Signed in
+                console.log("hej")
+                const user = userCredential.user;
+                if (!user) return false
+
+                return await deleteUser(user).then(() => {
+                    console.log("firsr part sucess")
+                    return true
+                }).catch((error) => {
+                    console.log("inderste catc")
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    throw new DeleteUserError(errorCode, errorMessage)
+                });
+
+            })
+            .catch((error) => {
+                console.log("yderste catch" + error.code)
+                const errorCode = error.code;
+                const errorMessage = error.message;
+                throw new DeleteUserError(errorCode, errorMessage)
+            });
+
+
     }
 
 }
