@@ -82,6 +82,11 @@
     <title>Register</title>
 </svelte:head>
 <section class="section">
+    <div class="no-print mb-4">
+        <a href="/admin" class="button is-light">
+            ← {catalog.button_texts.go_back_to_dashboard}
+        </a>
+    </div>
     <div class="container is-max-desktop">
         <h1 class="title">Register</h1>
 

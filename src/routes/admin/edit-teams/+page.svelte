@@ -3,6 +3,7 @@
     import { FirebaseConnection } from '../../../lib/firebase/firebaseconnection';
     import type { Team } from '$lib/models/team';
     import { writable } from 'svelte/store';
+    import {catalog} from "$lib/language/index.js";
 
     let teams: { [teamId: string]: Team } = {};
     let gameId: string;
@@ -116,7 +117,7 @@
 <section class="section">
     <div class="no-print mb-4">
         <a href="/admin" class="button is-light">
-            ← Back to dashboard
+            ← {catalog.button_texts.go_back_to_dashboard}
         </a>
     </div>
     <h1 class="title is-3">Manage Teams</h1>
