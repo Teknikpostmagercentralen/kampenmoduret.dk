@@ -1,6 +1,6 @@
 import {LoginError} from "./errors/login-error";
-import {userState} from "../../stores/userstate";
-import type {UserState} from "../../stores/userstate";
+import {userState} from "$lib/stores/userstate";
+import type {UserState} from "$lib/stores/userstate";
 import {FirebaseConnection} from "./firebaseconnection";
 import {goto} from "$app/navigation";
 

@@ -1,6 +1,6 @@
 // src/stores/globalStore.ts
 import {writable} from 'svelte/store';
-import type {User} from "../lib/models/user";
+import type {User} from "$lib/models/user";
 import {browser} from "$app/environment";
 
 export interface UserState {

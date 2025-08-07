@@ -1,330 +1,308 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
-	import type { User } from '$lib/models/user';
-	import { onDestroy, onMount } from 'svelte';
-	import type { Team, TeamWithTime } from '$lib/models/team';
-	import { FirebaseConnection } from '$lib/firebase/firebaseconnection';
-	import type { Game } from '$lib/models/game';
-	import {
-		sumCollectedTime,
-		GameInWrongStateError,
-		getTimeLeft,
-		shouldTeamBeMarkedDead
-	} from '$lib/game/gameLogic';
-	import { derived, get, writable } from 'svelte/store';
-	import { GameState } from '$lib/models/game-state';
-	import { readable } from 'svelte/store';
-	import { TimeFormatter } from '$lib/game/time-formatter.js';
+    import {goto} from '$app/navigation';
+    import {browser} from '$app/environment';
+    import type {User} from '$lib/models/user';
+    import {onDestroy, onMount} from 'svelte';
+    import type {Team, TeamWithTime} from '$lib/models/team';
+    import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
+    import type {Game} from '$lib/models/game';
+    import {
+        sumCollectedTime,
+        GameInWrongStateError,
+        getTimeLeft,
+        shouldTeamBeMarkedDead
+    } from '$lib/game/gameLogic';
+    import {derived, get, writable} from 'svelte/store';
+    import {GameState} from '$lib/models/game-state';
+    import {readable} from 'svelte/store';
+    import {TimeFormatter} from '$lib/game/time-formatter.js';
+    import {TeamTicker} from '$lib/game/teamTicker';
+    import {gameDataForAdmin} from "$lib/stores/gameDataForAdmin";
+    import {teamDataForAdmin} from "$lib/stores/teamDataForAdmin";
 
-	let updateTeamsLoopTimer: ReturnType<typeof setTimeout>;
-	let tickerTimer: ReturnType<typeof setTimeout>;
+    let tickerTimer: ReturnType<typeof setTimeout>;
 
-	/* Value is never used but because the table is derived from the value its updated when the value is updated ewhich is every second*/
-	export const timeTicker = readable(0, (set) => {
-		const interval = setInterval(() => {
-			set(Date.now());
-		}, 1000);
+    /* Value is never used but because the table is derived from the value its updated when the value is updated ewhich is every second*/
+    export const timeTicker = readable(0, (set) => {
+        const interval = setInterval(() => {
+            set(Date.now());
+        }, 1000);
 
-		return () => clearInterval(interval); // oprydning
-	});
+        return () => clearInterval(interval); // oprydning
+    });
 
-	function startUpdateTeamsLoop() {
-		setTimeout(async () => {
-			const teams = get(rawTeamData); // Get raw team data
-			if (Object.keys(teams).length === 0) return; //if no teams on list fail fast
+    const teamsShownInTable = writable<TeamWithTime[]>([]); // the public data in the table, so we can control when its updated. And its not just updated while calculating new values
 
-			for (const [teamId, team] of Object.entries(teams)) {
-				const game = get(rawGameData);
+    let user: User;
+    let displayName: string;
+    let gameId: string;
 
-				try {
-					const secondsLeft = await getTimeLeft(team, game);
+    let gameMultiplierInputFieldValue: number;
 
-					await FirebaseConnection.getInstance().then(async (instance) => {
-						let dead = await instance.isTeamDead(teamId);
-						if (!dead) {
-							let shouldbeDead = shouldTeamBeMarkedDead(game, team, teamId, secondsLeft);
-							if (shouldbeDead) {
-								await instance.setTeamDead(teamId);
-								console.log('You dead jim: ' + team.username + ' - ' + teamId);
-								console.log('timeleft: ' + secondsLeft);
-							}
-						}
-					});
-				} catch (e) {
-					//empty catch
-				}
-			}
+    // Function to handle saving new multiplier value
+    async function saveNewValue() {
+        await FirebaseConnection.getInstance().then(async (instance) => {
+            await instance.setMultiplierValue(gameMultiplierInputFieldValue, gameId);
+        });
+    }
 
-			startUpdateTeamsLoop(); // Continue loop
-		}, 1000);
-	}
+    async function registerAllListeners() {
+        const instance = await FirebaseConnection.getInstance();
+        instance.registerUserListener({
+            onDataChanged: async (userUpdate) => {
+                user = userUpdate;
 
-	const teamsShownInTable = writable<TeamWithTime[]>([]); // the public data in the table, so we can control when its updated. And its not just updated while calculating new values
-	let rawTeamData = writable<Record<string, Team>>({});
+                const admin = await instance.getAdmin();
+                gameId = Object.keys(admin.games)[0];
 
-	const rawGameData = writable<Game>({
-		multiplier: 1, // Default multiplier
-		gameState: GameState.WELCOME // Assume the game is in welcome state
-	});
+                // Get current multiplier value and update input field on page load
+                gameMultiplierInputFieldValue = await instance.getGameMultiplier(gameId);
 
-	let user: User;
-	let displayName: string;
-	let gameId: string;
+                instance.registerGameListener(gameId, {
+                    onDataChanged: async (gameUpdate) => {
+                        gameDataForAdmin.set(gameUpdate);
+                    }
+                });
 
-	let gameMultiplierInputFieldValue: number;
+                instance.registerTeamsListener(gameId, {
+                    // TODO: This really needs to be tested
+                    onTeamChangedOrAdded: async (teamUpdate) => {
+                        teamDataForAdmin.update((current) => {
+                            return {
+                                ...current,
+                                [teamUpdate.id]: teamUpdate
+                            };
+                        });
+                        // Process and update the table data
+                    },
+                    onTeamRemovedFromGame: (removedTeamId) => {
+                        teamDataForAdmin.update((current) => {
+                            const copy = {...current};
+                            delete copy[removedTeamId];
+                            return copy;
+                        });
+                    }
+                });
+            }
+        });
+    }
 
-	// Function to handle saving new multiplier value
-	async function saveNewValue() {
-		await FirebaseConnection.getInstance().then(async (instance) => {
-			await instance.setMultiplierValue(gameMultiplierInputFieldValue, gameId);
-		});
-	}
+    onDestroy(async () => {
+        await FirebaseConnection.getInstance().then((instance) => {
+            instance.killAllListenersFromThisPage();
+        });
 
-	async function registerAllListeners() {
-		const instance = await FirebaseConnection.getInstance();
-		instance.registerUserListener({
-			onDataChanged: async (userUpdate) => {
-				user = userUpdate;
+        TeamTicker.getInstance().stop();
+        clearTimeout(tickerTimer);
+    });
+    export const teamsShownInTableV2 = derived(
+        [teamDataForAdmin, gameDataForAdmin, timeTicker],
+        ([teams, gameData], set) => {
+            (async () => {
+                if (!teams || !gameData || Object.keys(teams).length === 0) {
+                    set([]);
+                    return;
+                }
 
-				const admin = await instance.getAdmin();
-				gameId = Object.keys(admin.games)[0];
+                if (Object.keys(teams).length === 0) return; //if no teams on list fail fast
+                if (Object.keys(gameData).length === 0) return; //if no teams on list fail fast
 
-				// Get current multiplier value and update input field on page load
-				gameMultiplierInputFieldValue = await instance.getGameMultiplier(gameId);
+                const teamArray = Object.values(teams);
 
-				instance.registerGameListener(gameId, {
-					onDataChanged: async (gameUpdate) => {
-						rawGameData.set(gameUpdate);
-					}
-				});
+                const processedTeams: TeamWithTime[] = await Promise.all(
+                    teamArray.map(async (team) => {
+                        let timeLeft;
+                        try {
+                            timeLeft = await getTimeLeft(team, gameData);
+                        } catch (e) {
+                            if (e instanceof GameInWrongStateError) {
+                            }
+                        }
 
-				instance.registerTeamsListener(gameId, {
-					// TODO: This really needs to be tested
-					onTeamChangedOrAdded: async (teamUpdate) => {
-						$rawTeamData[teamUpdate.id] = teamUpdate;
-						// Process and update the table data
-					},
-					onTeamRemovedFromGame: (removedTeamId) => {
-						delete $rawTeamData[removedTeamId];
-					}
-				});
-				startUpdateTeamsLoop(); // start the timer to update teams
-			}
-		});
-	}
+                        return {
+                            ...team,
+                            secondsLeft: timeLeft,
+                            allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime
+                        };
+                    })
+                );
 
-	onDestroy(async () => {
-		await FirebaseConnection.getInstance().then((instance) => {
-			instance.killAllListenersFromThisPage();
-		});
+                processedTeams.sort((a, b) => b.allSecondsEarned - a.allSecondsEarned);
 
-		clearTimeout(updateTeamsLoopTimer);
-		clearTimeout(tickerTimer);
-		await FirebaseConnection.getInstance().then((instance) => {
-			instance.killAllListenersFromThisPage();
-		});
-	});
-	export const teamsShownInTableV2 = derived(
-		[rawTeamData, rawGameData, timeTicker],
-		([teams, gameData], set) => {
-			(async () => {
-				if (!teams || !gameData || Object.keys(teams).length === 0) {
-					set([]);
-					return;
-				}
+                set(processedTeams);
+            })();
+        }
+    );
 
-				if (Object.keys(teams).length === 0) return; //if no teams on list fail fast
-				if (Object.keys(gameData).length === 0) return; //if no teams on list fail fast
+    if (browser) {
+        FirebaseConnection.getInstance().then(async (instance) => {
+            await instance.onUserReady(async () => {
+                displayName = await instance.getAdminDisplayName();
+                await registerAllListeners();
+                TeamTicker.getInstance().start(); // start the timer to update teams when game runs (timer will handle not being started twice and not running in wrong game state
+            });
+        });
+    }
 
-				const teamArray = Object.values(teams);
-
-				const processedTeams: TeamWithTime[] = await Promise.all(
-					teamArray.map(async (team) => {
-						let timeLeft;
-						try {
-							timeLeft = await getTimeLeft(team, gameData);
-						} catch (e) {
-							if (e instanceof GameInWrongStateError) {
-							}
-						}
-
-						return {
-							...team,
-							secondsLeft: timeLeft,
-							allSecondsEarned: sumCollectedTime(team.completedTasks) + team.bonusTime
-						};
-					})
-				);
-
-				processedTeams.sort((a, b) => b.allSecondsEarned - a.allSecondsEarned);
-
-				set(processedTeams);
-			})();
-		}
-	);
-
-	if (browser) {
-		FirebaseConnection.getInstance().then(async (instance) => {
-			await instance.onUserReady(async () => {
-				displayName = await instance.getAdminDisplayName();
-				await registerAllListeners();
-			});
-		});
-	}
-
-	// Function to confirm actions
-	async function confirmAction(actionName: string, action: () => Promise<void>) {
-		if (confirm(`Are you sure you want to ${actionName}? This action cannot be undone.`)) {
-			await action();
-		}
-	}
+    // Function to confirm actions
+    async function confirmAction(actionName: string, action: () => Promise<void>) {
+        if (confirm(`Are you sure you want to ${actionName}? This action cannot be undone.`)) {
+            await action();
+        }
+    }
 </script>
 
 <main class="section">
-	<div class="container">
-		<!-- Logout Link, positioned in the top right of the page, outside the box -->
-		<div style="position: absolute; top: 20px; right: 20px;">
-			<a
-				class="is-size-6 has-text-grey"
-				href="#"
-				on:click={() => {
+    <div class="container">
+        <!-- Logout Link, positioned in the top right of the page, outside the box -->
+        <div style="position: absolute; top: 20px; right: 20px;">
+            <a
+                    class="is-size-6 has-text-grey"
+                    href="#"
+                    on:click={() => {
 					goto('/user/logout');
 				}}>Logout</a
-			>
-		</div>
+            >
+        </div>
 
-		{#if displayName}
-			<h1 class="title has-text-grey">Hello {displayName}</h1>
-		{/if}
+        {#if displayName}
+            <h1 class="title has-text-grey">Hello {displayName}</h1>
+        {/if}
 
-		<div class="box">
-			<h2 class="subtitle has-text-grey mb-4">Setting up the game</h2>
+        <div class="box">
+            <h2 class="subtitle has-text-grey mb-4">Setting up the game</h2>
 
-			<div class="box">
-				<h2 class="subtitle has-text-grey mb-4">Setting up the game</h2>
+            <div class="box">
+                <h2 class="subtitle has-text-grey mb-4">Setting up the game</h2>
 
-				<!-- Task management -->
-				<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Task management</p>
-				<div class="buttons">
-					<button class="button is-link" on:click={() => goto('/admin/create-task')}>
-						<span class="icon"><i class="fas fa-plus"></i></span>
-						<span>Add task</span>
-					</button>
+                <!-- Task management -->
+                <p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Task management</p>
+                <div class="buttons">
+                    <button class="button is-link" on:click={() => goto('/admin/create-task')}>
+                        <span class="icon"><i class="fas fa-plus"></i></span>
+                        <span>Add task</span>
+                    </button>
 
-					<button class="button is-link is-light" on:click={() => goto('/admin/edit-tasks')}>
-						<span class="icon"><i class="fas fa-edit"></i></span>
-						<span>Edit tasks</span>
-					</button>
-				</div>
+                    <button class="button is-link is-light" on:click={() => goto('/admin/edit-tasks')}>
+                        <span class="icon"><i class="fas fa-edit"></i></span>
+                        <span>Edit tasks</span>
+                    </button>
+                </div>
 
-				<!-- Team management -->
-				<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mt-5 mb-2">Team management</p>
-				<div class="buttons">
-					<button class="button is-link is-light" on:click={() => goto('/admin/register-team')}>
-						<span class="icon"><i class="fas fa-users"></i></span>
-						<span>Add team</span>
-					</button>
+                <!-- Team management -->
+                <p class="is-size-6 has-text-weight-semibold has-text-grey-dark mt-5 mb-2">Team management</p>
+                <div class="buttons">
+                    <button class="button is-link is-light" on:click={() => goto('/admin/register-team')}>
+                        <span class="icon"><i class="fas fa-users"></i></span>
+                        <span>Add team</span>
+                    </button>
 
-					<button class="button is-link is-light" on:click={() => goto('/admin/edit-teams')}>
-						<span class="icon"><i class="fas fa-edit"></i></span>
-						<span>Edit teams</span>
-					</button>
-				</div>
+                    <button class="button is-link is-light" on:click={() => goto('/admin/edit-teams')}>
+                        <span class="icon"><i class="fas fa-edit"></i></span>
+                        <span>Edit teams</span>
+                    </button>
+                </div>
 
-				<!-- Print / Export -->
-				<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mt-5 mb-2">Print / export</p>
-				<div class="buttons">
-					<button class="button is-light" on:click={() => goto('/admin/print/tasks')}>
-						<span class="icon"><i class="fas fa-print"></i></span>
-						<span>Print tasks</span>
-					</button>
+                <!-- Print / Export -->
+                <p class="is-size-6 has-text-weight-semibold has-text-grey-dark mt-5 mb-2">Print / export</p>
+                <div class="buttons">
+                    <button class="button is-light" on:click={() => goto('/admin/print/tasks')}>
+                        <span class="icon"><i class="fas fa-print"></i></span>
+                        <span>Print tasks</span>
+                    </button>
 
-					<button class="button is-light" on:click={() => goto('/admin/print/teams')}>
-						<span class="icon"><i class="fas fa-qrcode"></i></span>
-						<span>Print team QR codes</span>
-					</button>
-				</div>
-			</div>
+                    <button class="button is-light" on:click={() => goto('/admin/print/teams')}>
+                        <span class="icon"><i class="fas fa-qrcode"></i></span>
+                        <span>Print team QR codes</span>
+                    </button>
+                </div>
+            </div>
 
-		<!-- game controls -->
-		<div class="box">
-			<h2 class="subtitle has-text-grey mb-4">Game controls</h2>
+            <!-- game controls -->
+            <div class="box">
+                <h2 class="subtitle has-text-grey mb-4">Game controls</h2>
 
-			<!-- Group 1: Starting phase -->
-			<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Phase control</p>
-			<div class="buttons mb-4">
-				<button
-						class="button is-dark"
-						on:click={async () => {
+                <!-- Group 1: Starting phase -->
+                <p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Phase control</p>
+                <div class="buttons mb-4">
+                    <button
+                            class="button is-dark"
+                            on:click={async () => {
 				await confirmAction('start the game', async () => {
 					await FirebaseConnection.getInstance().then(async (instance) => {
-						if (gameId) await instance.startGame(gameId);
+						if (gameId) {
+                          await instance.startGame(gameId);
+                          TeamTicker.getInstance().start(); // start the timer to update teams
+						}
+
 					});
 				});
 			}}
-						disabled={$rawGameData.gameState !== GameState.WELCOME}
-				>
-					<span class="icon"><i class="fas fa-play"></i></span>
-					<span>Start game</span>
-				</button>
+                            disabled={$gameDataForAdmin.gameState !== GameState.WELCOME}
+                    >
+                        <span class="icon"><i class="fas fa-play"></i></span>
+                        <span>Start game</span>
+                    </button>
+                </div>
 
-				<button
-						class="button is-dark"
-						on:click={async () => {
-				await confirmAction('deactivate the game', async () => {
-					await FirebaseConnection.getInstance().then(async (instance) => {
-						if (gameId) await instance.deactivateGame(gameId);
-					});
-				});
-			}}
-						disabled={$rawGameData.gameState === GameState.DEACTIVATED || $rawGameData.gameState === GameState.STOPPED || $rawGameData.gameState === GameState.WELCOME}
-				>
-					<span class="icon"><i class="fas fa-power-off"></i></span>
-					<span>Deactivate</span>
-				</button>
-			</div>
-
-			<!-- Group 2: In-game state -->
-			<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Game state</p>
-			<div class="buttons mb-4">
-				<button
-						class="button is-dark"
-						on:click={async () => {
+                <!-- Group 2: In-game state -->
+                <p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Game state</p>
+                <div class="buttons mb-4">
+                    <button
+                            class="button is-dark"
+                            on:click={async () => {
 				await confirmAction('activate the game', async () => {
 					await FirebaseConnection.getInstance().then(async (instance) => {
 						if (gameId) await instance.setGameStarted(gameId);
 					});
 				});
 			}}
-						disabled={$rawGameData.gameState === GameState.STARTED || $rawGameData.gameState === GameState.STOPPED || $rawGameData.gameState === GameState.WELCOME}
-				>
-					<span class="icon"><i class="fas fa-flag-checkered"></i></span>
-					<span>Activate</span>
-				</button>
+                            disabled={$gameDataForAdmin.gameState === GameState.STARTED || $gameDataForAdmin.gameState === GameState.STOPPED || $gameDataForAdmin.gameState === GameState.WELCOME}
+                    >
+                        <span class="icon"><i class="fas fa-flag-checkered"></i></span>
+                        <span>Activate</span>
+                    </button>
 
-				<button
-						class="button is-dark"
-						on:click={async () => {
-				await confirmAction('stop the game', async () => {
+
+                    <button
+                            class="button is-dark"
+                            on:click={async () => {
+				await confirmAction('deactivate the game', async () => {
 					await FirebaseConnection.getInstance().then(async (instance) => {
-						if (gameId) await instance.stopGame(gameId);
+						if (gameId) await instance.deactivateGame(gameId);
 					});
 				});
 			}}
-						disabled={$rawGameData.gameState === GameState.STOPPED || $rawGameData.gameState === GameState.WELCOME}
-				>
-					<span class="icon"><i class="fas fa-stop"></i></span>
-					<span>Stop</span>
-				</button>
-			</div>
+                            disabled={$gameDataForAdmin.gameState === GameState.DEACTIVATED || $gameDataForAdmin.gameState === GameState.STOPPED || $gameDataForAdmin.gameState === GameState.WELCOME}
+                    >
+                        <span class="icon"><i class="fas fa-power-off"></i></span>
+                        <span>Deactivate</span>
+                    </button>
+                </div>
 
-			<!-- Group 3: Danger zone -->
-			<p class="is-size-6 has-text-weight-semibold has-text-danger mb-2">Danger zone</p>
-			<div class="buttons">
-				<button
-						class="button is-danger"
-						on:click={async () => {
+                <!-- Group 3: Danger zone -->
+                <p class="is-size-6 has-text-weight-semibold has-text-danger mb-2">Danger zone</p>
+                <div class="buttons">
+
+                    <button
+                            class="button is-dark"
+                            on:click={async () => {
+				await confirmAction('stop the game', async () => {
+					await FirebaseConnection.getInstance().then(async (instance) => {
+						if (gameId) await instance.stopGame(gameId);
+						TeamTicker.getInstance().stop();
+					});
+				});
+			}}
+                            disabled={$gameDataForAdmin.gameState === GameState.STOPPED || $gameDataForAdmin.gameState === GameState.WELCOME}
+                    >
+                        <span class="icon"><i class="fas fa-stop"></i></span>
+                        <span>Stop</span>
+                    </button>
+
+                    <button
+                            class="button is-danger"
+                            on:click={async () => {
 				await confirmAction('DELETE all data and RESET game', async () => {
 					await FirebaseConnection.getInstance().then(async (instance) => {
 						if (gameId) {
@@ -334,76 +312,81 @@
 					});
 				});
 			}}
-				>
-					<span class="icon"><i class="fas fa-trash-alt"></i></span>
-					<span>Reset the game & delete all progress for teams</span>
-				</button>
-			</div>
-		</div>
+                            disabled={$gameDataForAdmin.gameState !== GameState.STOPPED}
 
-		<div class="box">
-			<h2 class="subtitle has-text-grey">Team score overall</h2>
+                    >
+                        <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                        <span>Reset the game & delete all progress for teams</span>
+                    </button>
+                </div>
+            </div>
 
-			<div class="table-container">
-				<table class="table is-striped is-hoverable is-fullwidth">
-					<thead>
-						<tr class="has-background-grey-lighter">
-							<th class="has-text-grey-dark">Name</th>
-							<th class="has-text-grey-dark">Time Left</th>
-							<th class="has-text-grey-dark">Seconds Earned</th>
-							<th class="has-text-grey-dark">Nr Participants</th>
-							<th class="has-text-grey-dark">Last Task</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each $teamsShownInTableV2 as team}
-							<tr class:has-text-danger={team.deathTimestamp}>
-								<td>{team.username}</td>
-								<td>
-									{#if $rawGameData.gameState === GameState.STARTED || $rawGameData.gameState === GameState.DEACTIVATED}
-										{TimeFormatter.formatTime(team.secondsLeft)}
-									{:else if $rawGameData.gameState === GameState.STOPPED}
-										{TimeFormatter.formatTime(team.secondsLeft)}
-									{:else}
-										--:--
-									{/if}
-								</td>
-								<td>{team.allSecondsEarned}</td>
-								<td>{team.participants}</td>
-								{#if team.lastCompletedTask}
-									<td>{team.lastCompletedTask.letter} {team.lastCompletedTask.number}</td>
-								{:else}
-									<td>No completed task</td>
-								{/if}
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-			<div class="box">
-				<h2 class="subtitle has-text-grey">Edit the Value</h2>
-				<div class="field">
-					<label class="label has-text-grey-dark">Edit the Value</label>
-					<div class="control">
-						<input
-							class="input"
-							type="number"
-							bind:value={gameMultiplierInputFieldValue}
-							placeholder="Enter new value"
-						/>
-					</div>
-				</div>
+            <div class="box">
+                <h2 class="subtitle has-text-grey">Team score overall</h2>
 
-				<p class="has-text-grey-dark mt-5 mb-5">
-					Whole and decimal numbers supported. For example, 1 or 5 or 1.6
-				</p>
+                <div class="table-container">
+                    <table class="table is-striped is-hoverable is-fullwidth">
+                        <thead>
+                        <tr class="has-background-grey-lighter">
+                            <th class="has-text-grey-dark">Name</th>
+                            <th class="has-text-grey-dark">Time Left</th>
+                            <th class="has-text-grey-dark">Seconds Earned</th>
+                            <th class="has-text-grey-dark">Nr Participants</th>
+                            <th class="has-text-grey-dark">Last Task</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {#if $teamsShownInTableV2}
+                            {#each $teamsShownInTableV2 as team}
+                                <tr class:has-text-danger={team.deathTimestamp}>
+                                    <td>{team.username}</td>
+                                    <td>
+                                        {#if $gameDataForAdmin.gameState === GameState.STARTED || $gameDataForAdmin.gameState === GameState.DEACTIVATED}
+                                            {TimeFormatter.formatTime(team.secondsLeft)}
+                                        {:else if $gameDataForAdmin.gameState === GameState.STOPPED}
+                                            {TimeFormatter.formatTime(team.secondsLeft)}
+                                        {:else}
+                                            --:--
+                                        {/if}
+                                    </td>
+                                    <td>{team.allSecondsEarned}</td>
+                                    <td>{team.participants}</td>
+                                    {#if team.lastCompletedTask}
+                                        <td>{team.lastCompletedTask.letter} {team.lastCompletedTask.number}</td>
+                                    {:else}
+                                        <td>No completed task</td>
+                                    {/if}
+                                </tr>
+                            {/each}
+                        {/if}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="box">
+                    <h2 class="subtitle has-text-grey">Edit the Value</h2>
+                    <div class="field">
+                        <label class="label has-text-grey-dark">Edit the Value</label>
+                        <div class="control">
+                            <input
+                                    class="input"
+                                    type="number"
+                                    bind:value={gameMultiplierInputFieldValue}
+                                    placeholder="Enter new value"
+                            />
+                        </div>
+                    </div>
 
-				<div class="control">
-					<button class="button has-background-primary has-text-white" on:click={saveNewValue}
-						>Save</button
-					>
-				</div>
-			</div>
-		</div>
-	</div>
+                    <p class="has-text-grey-dark mt-5 mb-5">
+                        Whole and decimal numbers supported. For example, 1 or 5 or 1.6
+                    </p>
+
+                    <div class="control">
+                        <button class="button has-background-primary has-text-white" on:click={saveNewValue}
+                        >Save
+                        </button
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
 </main>
