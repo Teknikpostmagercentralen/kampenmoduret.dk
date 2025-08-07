@@ -16,8 +16,7 @@
             await instance.onUserReady(async () => {
                 const admin = await instance.getAdmin();
                 const gameId = Object.keys(admin.games)[0];
-                const taskMap = await instance.getAllTasksInGame(gameId);
-                tasks = Object.values(taskMap);
+                tasks = await instance.getAllTasksInGame(gameId);
             });
         } catch (err) {
             if (err instanceof NoTasksInDatabase) {
@@ -80,14 +79,14 @@
                 </div>
             </div>
 
-            {#each tasks as task, i}
+            {#each Object.entries(tasks) as [key, task]}
                 <div class="column is-half">
                     <div class="box" style="margin-bottom:8rem">
                         <p class="title is-4 has-text-centered">
-                            {task.taskMarker.letter}{task.taskMarker.number}
+                            {task.taskMarker.letter + task.taskMarker.number}
                         </p>
                         <figure class="image is-square">
-                            <img src={generateQrUrl(i.toString(), task)} alt="QR code"/>
+                            <img src={generateQrUrl(key, task)} />
                         </figure>
                     </div>
                 </div>
