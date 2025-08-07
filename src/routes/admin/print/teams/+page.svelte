@@ -20,6 +20,11 @@
         });
     }
 
+    function generateDeviceCheckQRImageURL(): string {
+        const url = `${ConfigConstants.getURL()}/device-check`;
+        return `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(url)}`;
+    }
+
     function generateLoginUrl(team: Team): string {
         const baseURL = ConfigConstants.getURL();
         const username = stripAfterAt(team.email)
@@ -30,6 +35,10 @@
 
     function generateQrUrl(team: Team): string {
         const url = generateLoginUrl(team)
+        return encodeUrlInQRImageLink(url)
+    }
+
+    function encodeUrlInQRImageLink(url: string): string {
         return `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(url)}`;
     }
 
@@ -145,7 +154,7 @@
 <section class="section">
     <div class="no-print mb-4">
         <a href="/admin" class="button is-light">
-            ← Back to dashboard
+            ← {catalog.general_button_texts.go_back_to_dashboard}
         </a>
     </div>
     <div class="box has-background-info has-text-white mb-6">
@@ -165,7 +174,7 @@
             <div class="column is-narrow has-text-centered">
                 <figure class="image" style="margin: 0 auto;">
                     <img
-                            src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https%3A%2F%2Fgoogle.com"
+                            src={generateDeviceCheckQRImageURL()}
                             alt="Check time QR code"
                     />
                 </figure>
