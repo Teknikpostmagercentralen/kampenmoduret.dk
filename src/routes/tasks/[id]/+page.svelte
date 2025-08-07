@@ -2,7 +2,7 @@
     import {FirebaseConnection} from '$lib/firebase/firebaseconnection';
     import {goto} from '$app/navigation';
     import {browser} from '$app/environment';
-    import {TaskError, TwoOfTheSameLetterTaskInARowError} from "../../../lib/firebase/firebaseconnection";
+    import {FirebaseOperationError, TwoOfTheSameLetterTaskInARowError} from "../../../lib/firebase/firebaseconnection";
     import type {Task} from "../../../lib/models/task";
     import {onDestroy} from "svelte";
 
@@ -31,7 +31,7 @@
                         goto('/game');
                     }, 3000); // Delay in milliseconds
 
-                }).catch((reason: TaskError) => {
+                }).catch((reason: FirebaseOperationError) => {
                     if (reason.name === "SAME_LETTER") errormessage = "You cannot check in tasks with the same letter twice in a row"
                     if (reason.name === "SAME_TASK_TWICE") errormessage = "You have already solved this task"
                     if (reason.name === "AUTHENTICATION") errormessage = "You have to log in before solving a task"

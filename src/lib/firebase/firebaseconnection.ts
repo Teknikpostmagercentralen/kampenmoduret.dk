@@ -76,7 +76,7 @@ const app = initializeApp(firebaseConfig);
 export class NotValidCredentialsError extends Error {
 }
 
-export class TaskError implements Error {
+export class FirebaseOperationError implements Error {
     constructor(message: string, name: string) {
         this.message = message
         this.name = name
@@ -84,44 +84,52 @@ export class TaskError implements Error {
 
     message: string;
     name: string;
-
 }
 
-export class AuthenticationError extends TaskError {
+export class AuthenticationError extends FirebaseOperationError {
 
     constructor(message: string) {
         super(message, "AUTHENTICATION")
     }
 }
 
-export class TaskNotFoundError extends TaskError {
+
+export class NoTasksInDatabase extends FirebaseOperationError {
+
+    constructor(message: string) {
+        super(message, "NO_TASKS")
+    }
+}
+
+
+export class TaskNotFoundError extends FirebaseOperationError {
 
     constructor(message: string) {
         super(message, "TASK_NOT_FOUND_IN_FIREBASE")
     }
 }
 
-export class TeamGameIdNotFoundError extends TaskError {
+export class TeamGameIdNotFoundError extends FirebaseOperationError {
     constructor(message: string) {
         super(message, "TEAMS_GAME_ID_NOT_FOUND_IN_FIREBASE")
     }
 }
 
-export class GameNotStartedError extends TaskError {
+export class GameNotStartedError extends FirebaseOperationError {
 
     constructor(message: string) {
         super(message, "GAME_NOT_STARTED")
     }
 }
 
-export class TeamIsDeadError extends TaskError {
+export class TeamIsDeadError extends FirebaseOperationError {
 
     constructor(message: string) {
         super(message, "TEAM_IS_DEAD")
     }
 }
 
-export class TwoOfTheSameLetterTaskInARowError extends TaskError {
+export class TwoOfTheSameLetterTaskInARowError extends FirebaseOperationError {
 
     constructor(message: string) {
         super(message, "SAME_LETTER")
@@ -129,7 +137,7 @@ export class TwoOfTheSameLetterTaskInARowError extends TaskError {
 
 }
 
-export class AlreadySolvedTaskError extends TaskError {
+export class AlreadySolvedTaskError extends FirebaseOperationError {
     constructor(message: string) {
         super(message, "SAME_TASK_TWICE")
     }
@@ -422,7 +430,7 @@ export class FirebaseConnection {
             // Optionally: check if result is OK (e.g., with Firestore write result)
         } catch (error) {
             console.error('Failed to update team fields', error);
-            throw new TaskError("Could not update team", "Team_update_failed"); // So frontend can catch it and show toast
+            throw new FirebaseOperationError("Could not update team", "Team_update_failed"); // So frontend can catch it and show toast
         }
     }
 
@@ -445,14 +453,14 @@ export class FirebaseConnection {
 
         } catch (e) {
 
-            throw new TaskError("Could not delete team", "Deletion_failed")
+            throw new FirebaseOperationError("Could not delete team", "Deletion_failed")
 
         }
 
 
     }
 
-    async getTasks(gameId: string): Promise<{ [key: string]: Task }> {
+    async getAllTasksInGame(gameId: string): Promise<{ [key: string]: Task }> {
         const db = getDatabase();
         const taskIdInGameRef = ref(
             db,
@@ -460,13 +468,13 @@ export class FirebaseConnection {
         );
         const taskIdsInGameSnapshot = await get(taskIdInGameRef);
         if (!taskIdsInGameSnapshot || !taskIdsInGameSnapshot.exists()) {
-            throw new Error('Task data fetch error');
+            throw new NoTasksInDatabase('Task data fetch error');
         }
         const taskIdsInGame: string[] = Object.keys(taskIdsInGameSnapshot.val());
 
         const allTasksSnapshot = await get(ref(db, FirebaseConstants.TASKS_ROOT));
         if (!allTasksSnapshot || !allTasksSnapshot.exists()) {
-            throw new Error('Task data fetch error');
+            throw new NoTasksInDatabase('Task data fetch error');
         }
 
         const tasksToReturn: { [key: string]: Task } = {};
@@ -637,6 +645,36 @@ export class FirebaseConnection {
         await set(gameRef, newTaskRef.key);
     }
 
+    async updateTaskBaseTime(taskId: string, newBaseTime: number) {
+        const db = getDatabase(app);
+
+        try {
+            // Create a new task reference with an auto-generated id
+            const taskRimeRef = ref(db, `${FirebaseConstants.TASKS_ROOT}/${taskId}/${FirebaseConstants.TASK_BASE_TIME}`);
+            await set(taskRimeRef, newBaseTime);
+        } catch (error) {
+            throw new FirebaseOperationError("Could not update base time of task", "task_update_failed")
+        }
+
+
+    }
+
+    async removeTaskFromGame(gameId: string, taskId: string) {
+        const db = getDatabase(app);
+
+        const taskDeletionData: { [key: string]: null } = {};
+        taskDeletionData[`${FirebaseConstants.TASKS_ROOT}/${taskId}`] = null;
+        taskDeletionData[`${FirebaseConstants.GAME_ROOT_NEW}/${gameId}/${FirebaseConstants.GAME_TASKS}/${taskId}`] = null;
+
+        try {
+            await update(ref(db, `/`), taskDeletionData);
+
+        } catch (e) {
+            throw new FirebaseOperationError("Failed deleting task", "task deletion failed")
+        }
+
+    }
+
 
     async isAdmin(): Promise<boolean> {
         const uid = this.userState.uid;
@@ -680,7 +718,7 @@ export class FirebaseConnection {
         const snapshot = await get(
             ref(db, `${FirebaseConstants.TEAMS_ROOT}/${teamId}`)
         );
-        if(!snapshot.exists()) return Promise.resolve(true); // if team is deleted we count is as dead. to not mark deleted teams with nbo data as dead later. Otherwise we get "thost teams" with only the detah timestamp but to data. If we only look at death timestamp it would not be there even for teams that was just deleted
+        if (!snapshot.exists()) return Promise.resolve(true); // if team is deleted we count is as dead. to not mark deleted teams with nbo data as dead later. Otherwise we get "thost teams" with only the detah timestamp but to data. If we only look at death timestamp it would not be there even for teams that was just deleted
 
         const isdead = snapshot.child(`${FirebaseConstants.DEATH_TIMESTAMP}`).exists()
         return Promise.resolve(isdead);

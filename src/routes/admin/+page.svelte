@@ -201,40 +201,51 @@
 		<div class="box">
 			<h2 class="subtitle has-text-grey mb-4">Setting up the game</h2>
 
-			<!-- Task management -->
-			<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Task management</p>
-			<div class="buttons">
-				<button class="button is-link" on:click={() => goto('/admin/create-task')}>
-					<span class="icon"><i class="fas fa-plus"></i></span>
-					<span>Create new task</span>
-				</button>
+			<div class="box">
+				<h2 class="subtitle has-text-grey mb-4">Setting up the game</h2>
 
-				<button class="button is-link is-light" on:click={() => goto('/admin/register-team')}>
-					<span class="icon"><i class="fas fa-users"></i></span>
-					<span>Add team</span>
-				</button>
+				<!-- Task management -->
+				<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mb-2">Task management</p>
+				<div class="buttons">
+					<button class="button is-link" on:click={() => goto('/admin/create-task')}>
+						<span class="icon"><i class="fas fa-plus"></i></span>
+						<span>Add task</span>
+					</button>
 
-				<button class="button is-link is-light" on:click={() => goto('/admin/edit-teams')}>
-					<span class="icon"><i class="fas fa-edit"></i></span>
-					<span>Edit teams</span>
-				</button>
+					<button class="button is-link is-light" on:click={() => goto('/admin/edit-tasks')}>
+						<span class="icon"><i class="fas fa-edit"></i></span>
+						<span>Edit tasks</span>
+					</button>
+				</div>
+
+				<!-- Team management -->
+				<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mt-5 mb-2">Team management</p>
+				<div class="buttons">
+					<button class="button is-link is-light" on:click={() => goto('/admin/register-team')}>
+						<span class="icon"><i class="fas fa-users"></i></span>
+						<span>Add team</span>
+					</button>
+
+					<button class="button is-link is-light" on:click={() => goto('/admin/edit-teams')}>
+						<span class="icon"><i class="fas fa-edit"></i></span>
+						<span>Edit teams</span>
+					</button>
+				</div>
+
+				<!-- Print / Export -->
+				<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mt-5 mb-2">Print / export</p>
+				<div class="buttons">
+					<button class="button is-light" on:click={() => goto('/admin/print/tasks')}>
+						<span class="icon"><i class="fas fa-print"></i></span>
+						<span>Print tasks</span>
+					</button>
+
+					<button class="button is-light" on:click={() => goto('/admin/print/teams')}>
+						<span class="icon"><i class="fas fa-qrcode"></i></span>
+						<span>Print team QR codes</span>
+					</button>
+				</div>
 			</div>
-
-			<!-- Print / Export -->
-			<p class="is-size-6 has-text-weight-semibold has-text-grey-dark mt-5 mb-2">Print / export</p>
-			<div class="buttons">
-				<button class="button is-light" on:click={() => goto('/admin/print/tasks')}>
-					<span class="icon"><i class="fas fa-print"></i></span>
-					<span>Print tasks</span>
-				</button>
-
-				<button class="button is-light" on:click={() => goto('/admin/print/teams')}>
-					<span class="icon"><i class="fas fa-qrcode"></i></span>
-					<span>Print team QR codes</span>
-				</button>
-			</div>
-		</div>
-
 
 		<!-- game controls -->
 		<div class="box">
@@ -325,7 +336,7 @@
 			}}
 				>
 					<span class="icon"><i class="fas fa-trash-alt"></i></span>
-					<span>Reset & delete all</span>
+					<span>Reset the game & delete all progress for teams</span>
 				</button>
 			</div>
 		</div>

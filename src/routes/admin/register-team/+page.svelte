@@ -14,6 +14,7 @@
     let counter = 0;
 
     function register() {
+        console.log("register() called")
         if (browser) {
             error = ''; // clear previous errors
             if (!teamName?.trim() || bonusTime == null || participants == null) {

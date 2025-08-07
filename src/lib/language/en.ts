@@ -25,6 +25,13 @@ export const catalog = {
             utc_time: 'UTC time'
 
         },
+        printTasks: {
+            title: 'Task Printout',
+            no_task_add_it: "You can add your first task in the dashboard",
+            no_tasks: "No tasks found in database",
+            loading_tasks: "Loading tasks…",
+            QRHeading: 'Task QR codes'
+        }
     },
     registerTeam: {
         errors: {

@@ -22,6 +22,7 @@ export class FirebaseConstants {
     static GAME_STATE_STARTED: string = "game_started";
     static TEAM_PARTICIPANTS: string = "participants";
     static TEAM_BONUSTIME: string = "bonusTime";
+    static TASK_BASE_TIME: string = "baseTime";
 
 
 

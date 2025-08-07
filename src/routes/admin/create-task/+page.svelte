@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { browser } from "$app/environment";
-	import { goto, invalidateAll } from "$app/navigation";
+    import {browser} from "$app/environment";
+    import {goto, invalidateAll} from "$app/navigation";
     import {FirebaseConnection} from "../../../lib/firebase/firebaseconnection";
 
     let letter: string;
@@ -9,17 +9,17 @@
 
     function createTask() {
         if (browser) {
-            FirebaseConnection.getInstance().then((instance)=>{
-                instance.onUserReady(async ()=>{
+            FirebaseConnection.getInstance().then((instance) => {
+                instance.onUserReady(async () => {
                     const admin = await instance.getAdmin();
-				    const gameId = Object.keys(admin.games)[0];
+                    const gameId = Object.keys(admin.games)[0];
                     await instance.createTask(letter, number, baseTime, gameId);
                     goto('/admin');
                 });
             });
         }
     }
-    
+
 </script>
 
 <svelte:head>
@@ -29,17 +29,23 @@
     <div class="container is-max-desktop">
         <h1 class="title">Create task</h1>
 
-        <form class="box" on:submit|preventDefault={createTask}>
+        <form class="box" on:submit|preventDefault={createTask}
+              on:keydown={(e) => {
+	if (e.key === 'Enter' && e.target?.tagName === 'INPUT') {
+		createTask();
+	}
+}}
+        >
             <div class="field">
                 <label class="label">Letter</label>
                 <div class="control">
                     <input
-                        type="text"
-                        class="input"
-                        placeholder="A"
-                        maxlength="1"
-                        required
-                        bind:value={letter}
+                            type="text"
+                            class="input"
+                            placeholder="A"
+                            maxlength="1"
+                            required
+                            bind:value={letter}
                     />
                 </div>
             </div>
@@ -47,11 +53,11 @@
                 <label class="label">Number</label>
                 <div class="control">
                     <input
-                        type="number"
-                        class="input"
-                        placeholder="0"
-                        required
-                        bind:value={number}
+                            type="number"
+                            class="input"
+                            placeholder="0"
+                            required
+                            bind:value={number}
                     />
                 </div>
             </div>
@@ -59,11 +65,11 @@
                 <label class="label">Base Time</label>
                 <div class="control">
                     <input
-                        type="number"
-                        class="input"
-                        placeholder="0"
-                        required
-                        bind:value={baseTime}
+                            type="number"
+                            class="input"
+                            placeholder="0"
+                            required
+                            bind:value={baseTime}
                     />
                 </div>
             </div>

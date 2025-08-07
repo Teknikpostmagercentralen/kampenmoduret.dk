@@ -14,6 +14,7 @@
     let toastType: 'success' | 'error' | '' = ''
     let participants = writable(0);
     let bonusTime = writable(0);
+    let deletingAllTeams = false;
 
     onMount(async () => {
         const instance = await FirebaseConnection.getInstance();
@@ -62,21 +63,23 @@
         const confirmed = confirm('Are you absolutely sure you want to delete ALL teams in this game? This action cannot be undone.');
         if (!confirmed) return;
 
+        deletingAllTeams = true;
         try {
             const instance = await FirebaseConnection.getInstance();
             const teamsToBeDeleted = await instance.getAllTeamsInGame(gameId);
 
             for (const teamId of Object.keys(teamsToBeDeleted)) {
                 await instance.removeTeamFromGameAndDeleteTeam(gameId, teamId);
-                delete teams[teamId];
             }
+
             showToast('All teams deleted', 'success');
+            location.href = location.pathname; // force reload
         } catch (error) {
             console.error('Failed to delete all teams', error);
             showToast('Failed to delete all teams', 'error');
+            deletingAllTeams = false;
         }
     }
-
 
     async function deleteTeam(teamId: string) {
         if (confirm('Are you sure you want to delete this team?')) {
@@ -168,9 +171,14 @@
         <p class="mb-4">
             Deleting all teams cannot be undone. Make sure you really want to remove all team data from this game.
         </p>
-        <button class="button is-danger" on:click={deleteAllTeams} disabled={Object.keys(teams).length === 0}>
-            <span class="icon"><i class="fas fa-trash-alt"></i></span>
-            <span>Delete all teams</span>
+        <button class="button is-danger" on:click={deleteAllTeams} disabled={Object.keys(teams).length === 0 || deletingAllTeams}>
+            {#if deletingAllTeams}
+                <span class="icon"><i class="fas fa-spinner fa-spin"></i></span>
+                <span>Deleting...</span>
+            {:else}
+                <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                <span>Delete all teams</span>
+            {/if}
         </button>
     </div>
 
